@@ -29,19 +29,23 @@ A **Node.js/Express** web app for managing football tournaments. Features includ
 
 ```bash
 # 1. Start PostgreSQL
-sudo systemctl start postgresql          # Linux
-brew services start postgresql           # macOS
+brew services start postgresql@14
 
-# 2. Init database (first time only)
-psql -U postgres -f resources/initialize.sql
+# 2. Set postgres password (first time only)
+sudo -u postgres psql -p 5433 -c "ALTER USER postgres WITH PASSWORD '1';"
 
-# 3. Install dependencies
+# 3. Init database (first time only)
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f resources/initialize.sql
+
+# 4. Install dependencies
 npm install
 
-# 4. Start app
+# 5. Start app
 npm start
 # → http://localhost:3000
 ```
+
+> **After a PC restart**, only steps 1 and 5 are needed.
 
 ### Environment Variables (`.env`)
 
@@ -52,7 +56,7 @@ DB_HOST="localhost"
 DB_USER="postgres"
 DB_PASSWORD="1"
 DB_NAME="DB_FootballTournament"
-DB_PORT=5432
+DB_PORT=5433
 SALT_ROUNDS=10
 ```
 
@@ -60,14 +64,16 @@ SALT_ROUNDS=10
 
 | Task         | Command |
 |--------------|---------|
-| Init DB      | `psql -U postgres -f resources/initialize.sql` |
-| Reset DB     | `psql -U postgres -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";" && psql -U postgres -f resources/initialize.sql` |
-| Connect DB   | `psql -U postgres -d DB_FootballTournament` |
+| Start DB     | `brew services start postgresql@14` |
+| Set password (first time) | `sudo -u postgres psql -p 5433 -c "ALTER USER postgres WITH PASSWORD '1';"` |
+| Init DB      | `PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f resources/initialize.sql` |
+| Reset DB     | `PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";" && PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f resources/initialize.sql` |
+| Connect DB   | `PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -d DB_FootballTournament` |
 | Dump all tables | See below |
 
 Dump all tables dynamically:
 ```bash
-psql -U postgres -d DB_FootballTournament << 'EOF'
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -d DB_FootballTournament << 'EOF'
 SELECT 'SELECT * FROM ' || table_name || ';'
 FROM information_schema.tables
 WHERE table_schema = 'public'

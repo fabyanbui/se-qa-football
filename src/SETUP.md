@@ -12,42 +12,27 @@
 ### Start PostgreSQL
 
 ```bash
-# Linux (systemd)
-sudo systemctl start postgresql
-
-# macOS (Homebrew)
-brew services start postgresql
+brew services start postgresql@14
 ```
 
 ### Stop PostgreSQL
 
 ```bash
-# Linux
-sudo systemctl stop postgresql
-
-# macOS
-brew services stop postgresql
+brew services stop postgresql@14
 ```
 
 ### Restart PostgreSQL
 
 ```bash
-# Linux
-sudo systemctl restart postgresql
-
-# macOS
-brew services restart postgresql
+brew services restart postgresql@14
 ```
 
 ### Check PostgreSQL status
 
 ```bash
-# Linux
-sudo systemctl status postgresql
-
-# macOS
-brew services list | grep postgresql
+pg_lsclusters
 ```
+You should see **Status: online** for cluster `14 main` on port **5433**.
 
 ---
 
@@ -57,23 +42,27 @@ brew services list | grep postgresql
 
 This creates the database `DB_FootballTournament`, all tables, triggers, and sample data.
 
+**First, set the `postgres` user password to `1`** (one-time, matches `.env`):
 ```bash
-psql -U postgres -f resources/initialize.sql
+sudo -u postgres psql -p 5433 -c "ALTER USER postgres WITH PASSWORD '1';"
 ```
 
-> If prompted for a password, enter the password for the `postgres` user (default: `1` as set in `.env`).
+Then initialize the database:
+```bash
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f resources/initialize.sql
+```
 
 ### Reset the database (wipe and re-seed)
 
 ```bash
-psql -U postgres -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";"
-psql -U postgres -f resources/initialize.sql
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";"
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f resources/initialize.sql
 ```
 
 ### Connect to the database manually
 
 ```bash
-psql -U postgres -d DB_FootballTournament
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -d DB_FootballTournament
 ```
 
 ---
@@ -91,9 +80,9 @@ SESSION_SECRET="CodeOfDutySecrets"
 # Database
 DB_HOST="localhost"
 DB_USER="postgres"
-DB_PASSWORD="1"          # change this to your postgres password
+DB_PASSWORD="1"
 DB_NAME="DB_FootballTournament"
-DB_PORT=5432
+DB_PORT=5433
 
 # Password hashing
 SALT_ROUNDS=10
@@ -160,10 +149,12 @@ src/
 
 | Task                     | Command                                                             |
 |--------------------------|---------------------------------------------------------------------|
-| Start DB (Linux)         | `sudo systemctl start postgresql`                                   |
-| Stop DB (Linux)          | `sudo systemctl stop postgresql`                                    |
-| Init DB (first time)     | `psql -U postgres -f resources/initialize.sql`                      |
-| Reset DB                 | `psql -U postgres -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";" && psql -U postgres -f resources/initialize.sql` |
+| Start DB                 | `brew services start postgresql@14`                                 |
+| Stop DB                  | `brew services stop postgresql@14`                                  |
+| Check DB status          | `pg_lsclusters`                                                     |
+| Set postgres password    | `sudo -u postgres psql -p 5433 -c "ALTER USER postgres WITH PASSWORD '1';"` |
+| Init DB (first time)     | `PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f resources/initialize.sql` |
+| Reset DB                 | `PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";" && PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f resources/initialize.sql` |
 | Install packages         | `npm install`                                                       |
 | Start app                | `npm start`                                                         |
 | Start app (dev)          | `npm run dev`                                                       |
@@ -178,7 +169,7 @@ src/
 No need to list table names — this auto-discovers and dumps every table:
 
 ```bash
-psql -U postgres -d DB_FootballTournament << 'EOF'
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -d DB_FootballTournament << 'EOF'
 SELECT 'SELECT * FROM ' || table_name || ';'
 FROM information_schema.tables
 WHERE table_schema = 'public'
@@ -192,7 +183,7 @@ EOF
 Or if you prefer an explicit list:
 
 ```bash
-psql -U postgres -d DB_FootballTournament \
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -d DB_FootballTournament \
   -c "SELECT * FROM users;" \
   -c "SELECT * FROM tournaments;" \
   -c "SELECT * FROM formats;" \
@@ -208,7 +199,7 @@ psql -U postgres -d DB_FootballTournament \
 Connect to the database:
 
 ```bash
-psql -U postgres -d DB_FootballTournament
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -d DB_FootballTournament
 ```
 
 Useful commands inside `psql`:
@@ -251,7 +242,7 @@ ORDER BY ts.score DESC;
 **Option 1 — Expanded (vertical) mode** — best for wide tables like `teams`, `matches`:
 
 ```bash
-psql -U postgres -d DB_FootballTournament -c "\x auto" -c "SELECT * FROM teams;"
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -d DB_FootballTournament -c "\x auto" -c "SELECT * FROM teams;"
 ```
 
 Each row is displayed vertically:
@@ -267,7 +258,7 @@ status        | t
 **Option 2 — Box borders** — cleaner table grid:
 
 ```bash
-psql -U postgres -d DB_FootballTournament \
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -d DB_FootballTournament \
   --pset=border=2 \
   -c "SELECT id, name, level, status FROM teams;"
 ```
@@ -297,7 +288,7 @@ echo "\x auto
 pip install pgcli
 
 # Run
-pgcli -U postgres -d DB_FootballTournament
+pgcli -U postgres -h localhost -p 5433 -d DB_FootballTournament
 ```
 
 ### Using pgAdmin (GUI)
@@ -305,7 +296,7 @@ pgcli -U postgres -d DB_FootballTournament
 1. Download and install [pgAdmin](https://www.pgadmin.org/download/).
 2. Open pgAdmin → **Add New Server**:
    - **Host**: `localhost`
-   - **Port**: `5432`
+   - **Port**: `5433`
    - **Username**: `postgres`
    - **Password**: *(your postgres password, default `1`)*
    - **Database**: `DB_FootballTournament`
