@@ -64,7 +64,7 @@ SALT_ROUNDS=10
 
 | Task         | Command |
 |--------------|---------|
-| Start DB     | `brew services start postgresql@14` |
+| Start DB     | `brew services start postgresql@14` or `sudo -S service postgresql start && pg_lsclusters` |
 | Set password (first time) | `sudo -u postgres psql -p 5433 -c "ALTER USER postgres WITH PASSWORD '1';"` |
 | Init DB      | `PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f resources/initialize.sql` |
 | Reset DB     | `PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";" && PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f resources/initialize.sql` |
