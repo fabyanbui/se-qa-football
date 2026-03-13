@@ -1,5 +1,6 @@
 CREATE DATABASE "DB_FootballTournament";
 ALTER DATABASE "DB_FootballTournament" OWNER TO postgres;
+\c "DB_FootballTournament"
 
 --
 -- Name: delete_teams_statistics_on_status_change(); Type: FUNCTION; Schema: public; Owner: postgres
