@@ -44,24 +44,26 @@ module.exports = {
 
   getNumberOfOwnGoalsInTournament: async function (tournamentId) {
     const query = `
-    SELECT SUM(own_goals) FROM (
-      SELECT * FROM teams_statistics JOIN teams ON teams_statistics.team_id = teams.id
-      WHERE teams.tournament_id = $1
-    )
+    SELECT COALESCE(SUM(teams_statistics.own_goals), 0) AS total
+    FROM teams_statistics
+    JOIN teams ON teams_statistics.team_id = teams.id
+    WHERE teams.tournament_id = $1
     `;
     const res = await db.pool.query(query, [tournamentId]);
-    return res.rows[0].sum;
+    return +res.rows[0].total;
   },
 
   getNumberOfCardsInTournament: async function (tournamentId) {
     const query = `
-    SELECT SUM(red_cards) AS sum1, SUM(yellow_cards) AS sum2 FROM (
-      SELECT * FROM teams_statistics JOIN teams ON teams_statistics.team_id = teams.id
-      WHERE teams.tournament_id = $1
-    )
+    SELECT
+      COALESCE(SUM(teams_statistics.red_cards), 0) AS red_cards,
+      COALESCE(SUM(teams_statistics.yellow_cards), 0) AS yellow_cards
+    FROM teams_statistics
+    JOIN teams ON teams_statistics.team_id = teams.id
+    WHERE teams.tournament_id = $1
     `;
     const res = await db.pool.query(query, [tournamentId]);
-    return (+res.rows[0].sum1) + (+res.rows[0].sum2);
+    return (+res.rows[0].red_cards) + (+res.rows[0].yellow_cards);
   },
 
   updateMatchesPlayedOrFinished: async function () {
