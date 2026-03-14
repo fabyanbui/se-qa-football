@@ -2,7 +2,7 @@ require('dotenv').config();
 const db = require('./db-config');
 
 const bcrypt = require('bcrypt');
-const saltRounds = process.env.SALT_ROUND || 10;
+const saltRounds = parseInt(process.env.SALT_ROUNDS || '10', 10);
 
 module.exports = {
 
@@ -22,15 +22,28 @@ module.exports = {
     return result;
   },
 
-  createUser: async (email, password) => {
+  createUser: async (email, password, options = {}) => {
+    const role = (options.role || 'team_manager').toLowerCase();
+    const createdBy = options.createdBy ?? null;
     const query = `
-    INSERT INTO users (email, password)
-    VALUES ($1, $2)
-    RETURNING id;
-  `;
+      WITH selected_role AS (
+        SELECT id, code
+        FROM roles
+        WHERE code = $4
+      )
+      INSERT INTO users (email, password, role_id, privilege, created_by)
+      SELECT
+        $1,
+        $2,
+        selected_role.id,
+        CASE WHEN selected_role.code = 'admin' THEN 1 ELSE 0 END,
+        $3
+      FROM selected_role
+      RETURNING *;
+    `;
 
     const passwordHash = await bcrypt.hash(password, saltRounds);
-    return await db.pool.query(query, [email.toLowerCase(), passwordHash]);
+    return await db.pool.query(query, [email.toLowerCase(), passwordHash, createdBy, role]);
   },
 
   getAllUsers: async () => {
@@ -83,4 +96,3 @@ module.exports = {
 
 
 };
-

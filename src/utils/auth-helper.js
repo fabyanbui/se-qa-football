@@ -21,6 +21,13 @@ module.exports = {
     res.redirect('/');
   },
 
+  checkTournamentStaff: function (req, res, next) {
+    if (req.isAuthenticated() && req.user.canManageTournament) {
+      return next();
+    }
+    res.redirect('/');
+  },
+
   checkOwnTeam: function (req, res, next) {
     if (req.isAuthenticated()) {
       const teamId = req.params.teamId;

@@ -5,7 +5,7 @@ const controller = require('../controllers/tournament.c');
 const uploadLogo = require('../utils/multer/upload-logo');
 const uploadBanner = require('../utils/multer/upload-banner');
 
-const { checkAdmin } = require('../utils/auth-helper');
+const { checkTournamentStaff } = require('../utils/auth-helper');
 
 router.get('/', controller.getTournament);
 
@@ -19,23 +19,23 @@ router.get('/statistics', controller.getStatistics);
 router.get('/statistics/players', controller.getStatisticsPlayers);
 
 // admin
-router.get('/modifications', checkAdmin, controller.getModifications);
-router.get('/modifications/teams', checkAdmin, controller.getTeamsModifications);
-router.get('/modifications/matches', checkAdmin, controller.getMatchesModifications);
+router.get('/modifications', checkTournamentStaff, controller.getModifications);
+router.get('/modifications/teams', checkTournamentStaff, controller.getTeamsModifications);
+router.get('/modifications/matches', checkTournamentStaff, controller.getMatchesModifications);
 
-router.post('/modifications/info', checkAdmin, controller.postModificationsInfo);
-router.post('/modifications/logo', checkAdmin, uploadLogo.single('logo'), controller.posModificationsLogo);
-router.post('/modifications/banner', checkAdmin, uploadBanner.single('banner'), controller.postModificationsBanner);
+router.post('/modifications/info', checkTournamentStaff, controller.postModificationsInfo);
+router.post('/modifications/logo', checkTournamentStaff, uploadLogo.single('logo'), controller.posModificationsLogo);
+router.post('/modifications/banner', checkTournamentStaff, uploadBanner.single('banner'), controller.postModificationsBanner);
 
-router.put('/modifications/teams/:teamId/accept', checkAdmin, controller.putModificationsTeamsAccept);
-router.put('/modifications/teams/:teamId/reject', checkAdmin, controller.putModificationsTeamsReject);
+router.put('/modifications/teams/:teamId/accept', checkTournamentStaff, controller.putModificationsTeamsAccept);
+router.put('/modifications/teams/:teamId/reject', checkTournamentStaff, controller.putModificationsTeamsReject);
 
-router.put('/modifications/matches', checkAdmin, controller.putModificationsMatches);
+router.put('/modifications/matches', checkTournamentStaff, controller.putModificationsMatches);
 
-router.get('/matches/:id/edit', checkAdmin, controller.getMatchByIdEdit);
-router.post('/matches/:id/edit/goals', checkAdmin, controller.addNewGoal);
-router.post('/matches/:id/edit/cards', checkAdmin, controller.addNewCard);
-router.get('/matches/:id/edit/players', checkAdmin, controller.getMatchByIdEditPlayers);
-router.get('/matches/:id/edit/tickets', checkAdmin, controller.getMatchByIdEditTickets); // => Not implemente
+router.get('/matches/:id/edit', checkTournamentStaff, controller.getMatchByIdEdit);
+router.post('/matches/:id/edit/goals', checkTournamentStaff, controller.addNewGoal);
+router.post('/matches/:id/edit/cards', checkTournamentStaff, controller.addNewCard);
+router.get('/matches/:id/edit/players', checkTournamentStaff, controller.getMatchByIdEditPlayers);
+router.get('/matches/:id/edit/tickets', checkTournamentStaff, controller.getMatchByIdEditTickets); // => Not implemente
 
 module.exports = router;
