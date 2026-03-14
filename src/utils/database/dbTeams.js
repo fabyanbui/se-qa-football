@@ -4,6 +4,27 @@ const TournamentModel = require('../../models/tournament.m');
 
 module.exports = {
 
+  ensureNullableTournamentId: async () => {
+    const schemaInfo = await db.pool.query(`
+      SELECT is_nullable
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'teams'
+        AND column_name = 'tournament_id';
+    `);
+    if (schemaInfo.rowCount === 0) {
+      return false;
+    }
+    if (schemaInfo.rows[0].is_nullable === 'YES') {
+      return false;
+    }
+    await db.pool.query(`
+      ALTER TABLE teams
+      ALTER COLUMN tournament_id DROP NOT NULL;
+    `);
+    return true;
+  },
+
   countAllTeams: async () => {
     const query = `
       SELECT COUNT(*) FROM teams;
@@ -32,7 +53,7 @@ module.exports = {
 
   getAllTeams: async () => {
     const query = `
-      SELECT * FROM teams;
+      SELECT * FROM teams ORDER BY id ASC;
     `;
     const res = await db.pool.query(query);
     return res.rows;
@@ -40,6 +61,9 @@ module.exports = {
 
   getAllCurrentTeams: async () => {
     const currentTournamentId = await TournamentModel.getCurrentTournamentId();
+    if (!currentTournamentId) {
+      return [];
+    }
     const query = `
       SELECT * FROM teams WHERE tournament_id = $1 ORDER BY id ASC;
     `;
@@ -49,6 +73,9 @@ module.exports = {
 
   getAllActiveTeams: async () => {
     const currentTournamentId = await TournamentModel.getCurrentTournamentId();
+    if (!currentTournamentId) {
+      return [];
+    }
     const query = `
       SELECT * FROM teams WHERE tournament_id = $1 AND status = true ORDER BY id ASC;
     `;
@@ -86,6 +113,21 @@ module.exports = {
     `;
     const res = await db.pool.query(query, [ownerId]);
     return res.rows;
+  },
+
+  enrollTeamToCurrentTournament: async (id) => {
+    const currentTournamentId = await TournamentModel.getCurrentTournamentId();
+    if (!currentTournamentId) {
+      return 0;
+    }
+    const query = `
+      UPDATE teams
+      SET tournament_id = $1, status = false
+      WHERE id = $2 AND tournament_id IS NULL
+      RETURNING id;
+    `;
+    const res = await db.pool.query(query, [currentTournamentId, id]);
+    return res.rowCount;
   },
 
   updateTeam: async (id, team) => {

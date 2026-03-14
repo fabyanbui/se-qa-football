@@ -307,7 +307,7 @@ CREATE TABLE public.users (
     birthday date,
     phone character varying(11),
     introduction character varying(300),
-    role_id integer DEFAULT 3 NOT NULL,
+    role_id integer DEFAULT 2 NOT NULL,
     privilege integer DEFAULT 0 NOT NULL,
     created_by integer
 );
@@ -463,7 +463,7 @@ ALTER TABLE public.players ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
 CREATE TABLE public.teams (
     id integer NOT NULL,
     name character varying(50) NOT NULL,
-    tournament_id integer NOT NULL,
+    tournament_id integer,
     owner_id integer NOT NULL,
     contact_name character varying(50) NOT NULL,
     contact_email character varying(300) NOT NULL,

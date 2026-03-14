@@ -1,0 +1,89 @@
+{{> management-header}}
+
+<div class="bg-white-color px-5 py-3 text-center">
+  <div class="row mx-5 mb-2">
+
+    <div class="text-muted m-0 text-start">
+      Hiển thị tổng số <strong>{{accounts.length}}</strong> tài khoản.
+    </div>
+
+    <div class="table-responsive mt-3">
+      <table class="table">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col"></th>
+            <th scope="col" class="text-start">Họ tên</th>
+            <th scope="col" class="text-start">Email</th>
+            <th scope="col">Vai trò</th>
+            <th scope="col">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each accounts}}
+          <tr data-user-id="{{this.id}}">
+            <th scope="row">{{sum @index 1}}</th>
+            <td>
+              <img src="/img/avatars/{{this.avatar}}" alt="avatar" height="40px" width="40px"
+                class="rounded-circle object-fit-cover">
+            </td>
+            <td class="text-start">{{this.fullname}}</td>
+            <td class="text-start">{{this.email}}</td>
+            <td>
+              <span class="role-badge badge {{#if this.isTournamentOrganizer}}bg-primary{{else}}bg-warning text-dark{{/if}}">
+                {{#if this.isTournamentOrganizer}}
+                Tournament Organizer
+                {{else}}
+                Team Manager
+                {{/if}}
+              </span>
+            </td>
+            <td>
+              <div class="d-flex justify-content-center align-items-center">
+                <button class="btn btn-outline-warning btn-set-role" data-role="team_manager" {{#ifEquals this.role
+                  'team_manager'}}disabled{{/ifEquals}}>
+                  Đặt Team Manager
+                </button>
+                {{#if ../user.isAdmin}}
+                <button class="btn btn-outline-primary btn-set-role ms-2" data-role="tournament_organizer" {{#if
+                  this.isTournamentOrganizer}}disabled{{/if}}>
+                  Đặt Organizer
+                </button>
+                {{/if}}
+              </div>
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const setRoleButtons = document.querySelectorAll('.btn-set-role');
+
+  setRoleButtons.forEach(button => {
+    button.addEventListener('click', async () => {
+      const userId = button.closest('tr').dataset.userId;
+      const role = button.dataset.role;
+
+      const response = await fetch(`/management/accounts/${userId}/role`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ role }),
+      });
+
+      const result = await response.json();
+      if (result.status === 'success') {
+        window.location.reload();
+        return;
+      }
+
+      alert(result.message || 'Không thể cập nhật vai trò.');
+    });
+  });
+</script>

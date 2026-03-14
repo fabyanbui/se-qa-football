@@ -6,7 +6,7 @@ module.exports = {
   // GET /teams
   getTeams: async function (req, res, next) {
     const user = req.isAuthenticated() ? req.user : null;
-    const allTeams = await TeamModel.getAllCurrentTeams();
+    const allTeams = await TeamModel.getAllTeams();
     const nPerPage = 9;
     const page = Number.parseInt(req.query.page, 10) || 1;
     const nOfPages = Math.ceil(allTeams.length / nPerPage);
@@ -167,6 +167,30 @@ module.exports = {
     } catch (err) {
       console.log(err);
       res.status(400).json({ status: 'error' });
+    }
+  },
+
+  // POST /teams/:teamId/enroll-current-tournament
+  postEnrollCurrentTournament: async function (req, res, next) {
+    const user = req.isAuthenticated() ? req.user : null;
+    const teamId = req.params.teamId;
+    const team = await TeamModel.getTeam(teamId);
+    if (!team) return next();
+    if (team.ownerId != user.id) {
+      return res.status(403).json({ status: 'error', msg: 'Bạn không có quyền đăng ký đội bóng này.' });
+    }
+    if (team.tournamentId) {
+      return res.status(400).json({ status: 'error', msg: 'Đội bóng đã thuộc một giải đấu.' });
+    }
+    try {
+      const updatedCount = await TeamModel.enrollTeamToCurrentTournament(teamId);
+      if (updatedCount === 0) {
+        return res.status(400).json({ status: 'error', msg: 'Hiện chưa có giải đấu đang hoạt động để đăng ký.' });
+      }
+      return res.status(200).json({ status: 'success' });
+    } catch (err) {
+      console.log(err);
+      return res.status(400).json({ status: 'error', msg: 'Không thể đăng ký đội bóng vào giải hiện tại.' });
     }
   },
 

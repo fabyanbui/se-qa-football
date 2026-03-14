@@ -51,7 +51,7 @@ module.exports = {
     }
     let user;
     try {
-      user = await UserModel.createUser(email, password, { role: 'team_manager' });
+      user = await UserModel.createUser(email, password, { role: 'tournament_organizer' });
       if (!user) {
         return res.status(400).send({ status: 'error', message: 'Đăng ký thất bại' });
       }

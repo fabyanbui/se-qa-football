@@ -75,7 +75,7 @@ module.exports = class UserModel {
       return null;
     }
     const result = await dbUsers.getUserById(id);
-    if (!result) {
+    if (!result || result.rowCount === 0) {
       return null;
     }
     return new UserModel(result.rows[0]);
@@ -87,7 +87,7 @@ module.exports = class UserModel {
       return null;
     }
     const result = await dbUsers.getUserByEmail(email);
-    if (!result) {
+    if (!result || result.rowCount === 0) {
       return null;
     }
     return new UserModel(result.rows[0]);
@@ -140,6 +140,18 @@ module.exports = class UserModel {
       return null;
     }
     return true;
+  }
+
+  // UPDATE a user's role (non-admin roles only)
+  static async updateUserRole(id, role) {
+    if (!id || !role) {
+      return null;
+    }
+    const result = await dbUsers.updateUserRole(id, role);
+    if (!result || result.rowCount === 0) {
+      return null;
+    }
+    return new UserModel(result.rows[0]);
   }
 
 

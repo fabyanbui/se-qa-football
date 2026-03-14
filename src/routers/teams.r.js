@@ -5,12 +5,13 @@ const controller = require('../controllers/teams.c');
 const uploadLogo = require('../utils/multer/upload-team-logo');
 const uploadAvatar = require('../utils/multer/upload-player-avatar');
 
-const { checkAuthenticated, checkAdmin } = require('../utils/auth-helper'); // TODO: checkOwnTeam
+const { checkAuthenticated } = require('../utils/auth-helper'); // TODO: checkOwnTeam
 
 router.get('/', controller.getTeams);
 
 router.get('/create', checkAuthenticated, controller.getCreateTeam);
 router.post('/create-info', checkAuthenticated, controller.postCreateTeam);
+router.post('/:teamId/enroll-current-tournament', checkAuthenticated, controller.postEnrollCurrentTournament); // TODO: checkOwnTeam
 router.post('/:teamId/update-logo', checkAuthenticated, uploadLogo.single('logo'), controller.postUpdateLogo); // TODO: checkOwnTeam
 
 router.get('/:teamId', controller.getTeam);

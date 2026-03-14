@@ -24,7 +24,7 @@ module.exports = {
   },
 
   createUser: async (email, password, options = {}) => {
-    const role = (options.role || 'team_manager').toLowerCase();
+    const role = (options.role || 'tournament_organizer').toLowerCase();
     const createdBy = options.createdBy ?? null;
     const query = `
       WITH selected_role AS (
@@ -193,6 +193,26 @@ module.exports = {
     }
   },
 
+  ensureRegistrationRoleDefault: async () => {
+    const schemaInfo = await db.pool.query(`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'users'
+          AND column_name = 'role_id'
+      ) AS has_role_id;
+    `);
+    if (!schemaInfo.rows[0].has_role_id) {
+      return false;
+    }
+    await db.pool.query(`
+      ALTER TABLE users
+      ALTER COLUMN role_id SET DEFAULT 2;
+    `);
+    return true;
+  },
+
   getAllUsers: async () => {
     const query = `
       SELECT * FROM users;
@@ -212,6 +232,26 @@ module.exports = {
       SELECT * FROM users WHERE email = $1;
     `;
     return await db.pool.query(query, [normalizeEmail(email)]);
+  },
+
+  updateUserRole: async (id, role) => {
+    const normalizedRole = (role || '').toLowerCase();
+    const query = `
+      WITH selected_role AS (
+        SELECT id
+        FROM roles
+        WHERE code = $2
+          AND code IN ('tournament_organizer', 'team_manager')
+      )
+      UPDATE users u
+      SET role_id = selected_role.id,
+          privilege = 0
+      FROM selected_role
+      WHERE u.id = $1
+        AND u.role_id <> 1
+      RETURNING u.*;
+    `;
+    return await db.pool.query(query, [id, normalizedRole]);
   },
 
   updateUserInfo: async (id, fullname, birthday, phone, introduction) => {

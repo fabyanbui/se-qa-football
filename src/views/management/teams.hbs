@@ -46,6 +46,7 @@
             <td>{{this.contactName}}</td>
             <td>{{this.contactPhone}}</td>
             <td>{{this.contactEmail}}</td>
+            {{#if this.tournamentId}}
             {{#if this.status}}
             <td>
               <a href="/tournament" class="link-success">Đã duyệt</a>
@@ -61,6 +62,11 @@
             </td>
             {{/if}}
             {{/if}}
+            {{else}}
+            <td>
+              <span class="link-secondary">Chưa đăng ký giải</span>
+            </td>
+            {{/if}}
             <td>
               <div class="d-flex align-items-center justify-content-center">
                 <a href="/teams/{{this.id}}/edit">
@@ -73,6 +79,12 @@
                     <i class="fas fa-trash-alt"></i>
                   </button>
                 </a>
+                {{#unless this.tournamentId}}
+                <button data-team-id="{{this.id}}" class="btn btn-outline-primary ms-2 btn-enroll" {{#unless
+                  ../hasActiveTournament}}disabled{{/unless}}>
+                  <i class="fas fa-sign-in-alt"></i>
+                </button>
+                {{/unless}}
               </div>
             </td>
           </tr>
@@ -104,4 +116,20 @@
     });
     window.location.reload();
   }
+
+  const btnEnroll = document.querySelectorAll('.btn-enroll');
+  btnEnroll.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const teamId = btn.getAttribute('data-team-id');
+      const response = await fetch(`/teams/${teamId}/enroll-current-tournament`, {
+        method: 'POST',
+      });
+      const result = await response.json();
+      if (result.status === 'success') {
+        window.location.reload();
+        return;
+      }
+      alert(result.msg || 'Không thể đăng ký đội vào giải hiện tại.');
+    });
+  });
 </script>

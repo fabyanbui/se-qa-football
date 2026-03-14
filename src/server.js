@@ -17,12 +17,15 @@ require('./middlewares/node-schedule.mw')();
 require('./routers/index.r')(app);
 
 const dbUsers = require('./utils/database/dbUsers');
+const dbTeams = require('./utils/database/dbTeams');
 
 const http = require('http');
 const httpServer = http.createServer(app);
 const port = process.env.PORT || 3000;
 
 async function bootstrapAndStart() {
+  await dbUsers.ensureRegistrationRoleDefault();
+  await dbTeams.ensureNullableTournamentId();
   await dbUsers.ensureSeedAdmin(
     process.env.ADMIN_SEED_EMAIL,
     process.env.ADMIN_SEED_PASSWORD

@@ -41,6 +41,12 @@
     </a>
     {{/if}}
     {{#if user.canManageTournament}}
+    <a href="/management/accounts"
+      class="text-light fw-bold text-decoration-none me-4 {{#ifEquals subNavigation 2}}active{{/ifEquals}}">
+      <p class="h5">Quản lý tài khoản</p>
+    </a>
+    {{/if}}
+    {{#if user.canManageTournament}}
     <a href="/tournament/modifications" class="text-light fw-bold text-decoration-none me-4">
       <p class="h5">Quản lý giải</p>
     </a>

@@ -88,6 +88,10 @@ class TeamModel {
     return await dbTeams.updateTeamStatus(id, status);
   }
 
+  static async enrollTeamToCurrentTournament(id) {
+    return await dbTeams.enrollTeamToCurrentTournament(id);
+  }
+
   static async getTeamsStatistics() {
     return await dbTeams.getTeamsStatistics();
   }

@@ -15,10 +15,10 @@ module.exports = function (app) {
   app.use('/tournament', checkTournament, require('./tournament.r'));
 
   // "/teams?page=1", "/teams/:teamId"
-  app.use('/teams', checkTournament, require('./teams.r'));
+  app.use('/teams', require('./teams.r'));
 
   // "/management", "/management/tournament"
-  app.use('/management', checkTournament, require('./management.r'));
+  app.use('/management', require('./management.r'));
 
   // "/test" for testing
   app.get('/test', async function (req, res) {

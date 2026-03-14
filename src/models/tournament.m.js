@@ -57,7 +57,7 @@ module.exports = class TournamentModel {
   // Get current tournament
   static async getCurrentTournament() {
     const result = await dbTournaments.getCurrentTournament();
-    if (!result.rows) {
+    if (!result || result.rowCount === 0) {
       return null;
     }
     const tournament = new TournamentModel(result.rows[0]);
@@ -67,7 +67,7 @@ module.exports = class TournamentModel {
 
   static async getCurrentTournamentId() {
     const result = await dbTournaments.getCurrentTournamentId();
-    if (!result.rows) {
+    if (!result || result.rowCount === 0) {
       return null;
     }
     return result.rows[0].id;
