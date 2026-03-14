@@ -75,6 +75,7 @@ Replace with your real bootstrap values before initializing.
 - `src/utils/database/dbUsers.js`
   - `createUser(email, password, options)` now supports role-aware creation.
   - Defaults to `team_manager`.
+  - `ensureSeedAdmin(email, password)` bootstraps/repairs seeded admin on app startup.
 - `src/models/user.m.js`
   - Maps `role_id` to role code.
   - Exposes:
@@ -86,6 +87,11 @@ Replace with your real bootstrap values before initializing.
 
 - `src/utils/auth-helper.js`
   - Added `checkTournamentStaff` (admin OR tournament organizer).
+
+### Runtime bootstrap safety net
+
+- `src/server.js` now calls `ensureSeedAdmin(...)` before listening.
+- This repairs legacy bad seed rows (for example, admin rows with empty email) and ensures env-seeded admin credentials are usable.
 
 ### Route updates
 
@@ -117,7 +123,10 @@ From `src/`:
 set -a
 source .env
 set +a
-PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -f resources/initialize.sql
+PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" \
+  -v admin_seed_email="$ADMIN_SEED_EMAIL" \
+  -v admin_seed_password="$ADMIN_SEED_PASSWORD" \
+  -f resources/initialize.sql
 ```
 
 ## 9) Quick verification SQL

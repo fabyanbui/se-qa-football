@@ -52,7 +52,10 @@ Then initialize the database:
 set -a
 source .env
 set +a
-PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -f resources/initialize.sql
+PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" \
+  -v admin_seed_email="$ADMIN_SEED_EMAIL" \
+  -v admin_seed_password="$ADMIN_SEED_PASSWORD" \
+  -f resources/initialize.sql
 ```
 
 ### Reset the database (wipe and re-seed)
@@ -62,7 +65,10 @@ set -a
 source .env
 set +a
 PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";"
-PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -f resources/initialize.sql
+PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" \
+  -v admin_seed_email="$ADMIN_SEED_EMAIL" \
+  -v admin_seed_password="$ADMIN_SEED_PASSWORD" \
+  -f resources/initialize.sql
 ```
 
 ### Connect to the database manually
@@ -166,8 +172,8 @@ src/
 | Stop DB                  | `brew services stop postgresql@14`                                  |
 | Check DB status          | `pg_lsclusters`                                                     |
 | Set postgres password    | `sudo -u postgres psql -p 5433 -c "ALTER USER postgres WITH PASSWORD '1';"` |
-| Init DB (first time)     | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -f resources/initialize.sql` |
-| Reset DB                 | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";" && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -f resources/initialize.sql` |
+| Init DB (first time)     | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -v admin_seed_email="$ADMIN_SEED_EMAIL" -v admin_seed_password="$ADMIN_SEED_PASSWORD" -f resources/initialize.sql` |
+| Reset DB                 | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";" && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -v admin_seed_email="$ADMIN_SEED_EMAIL" -v admin_seed_password="$ADMIN_SEED_PASSWORD" -f resources/initialize.sql` |
 | Connect DB               | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -d "$DB_NAME"` |
 | Install packages         | `npm install`                                                       |
 | Start app                | `npm start`                                                         |

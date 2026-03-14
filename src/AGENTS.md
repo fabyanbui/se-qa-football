@@ -36,7 +36,10 @@ sudo -u postgres psql -p 5433 -c "ALTER USER postgres WITH PASSWORD '1';"
 
 # 3. Init database (first time only)
 set -a && source .env && set +a
-PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -f resources/initialize.sql
+PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" \
+  -v admin_seed_email="$ADMIN_SEED_EMAIL" \
+  -v admin_seed_password="$ADMIN_SEED_PASSWORD" \
+  -f resources/initialize.sql
 
 # 4. Install dependencies
 npm install
@@ -69,8 +72,8 @@ ADMIN_SEED_PASSWORD="CHANGE_ME_ADMIN_PASSWORD"
 |--------------|---------|
 | Start DB     | `brew services start postgresql@14` or `sudo -S service postgresql start && pg_lsclusters` |
 | Set password (first time) | `sudo -u postgres psql -p 5433 -c "ALTER USER postgres WITH PASSWORD '1';"` |
-| Init DB      | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -f resources/initialize.sql` |
-| Reset DB     | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";" && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -f resources/initialize.sql` |
+| Init DB      | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -v admin_seed_email="$ADMIN_SEED_EMAIL" -v admin_seed_password="$ADMIN_SEED_PASSWORD" -f resources/initialize.sql` |
+| Reset DB     | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";" && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -v admin_seed_email="$ADMIN_SEED_EMAIL" -v admin_seed_password="$ADMIN_SEED_PASSWORD" -f resources/initialize.sql` |
 | Connect DB   | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -d "$DB_NAME"` |
 | Dump all tables | See below |
 

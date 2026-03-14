@@ -1,6 +1,7 @@
 CREATE DATABASE "DB_FootballTournament";
 ALTER DATABASE "DB_FootballTournament" OWNER TO postgres;
 \c "DB_FootballTournament"
+\set ON_ERROR_STOP on
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -849,25 +850,34 @@ INSERT INTO public.roles OVERRIDING SYSTEM VALUE VALUES (3, 'team_manager', 'Tea
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-\set admin_seed_email ''
-\set admin_seed_password ''
-\getenv admin_seed_email ADMIN_SEED_EMAIL
-\getenv admin_seed_password ADMIN_SEED_PASSWORD
+-- Provide seed values via psql variables:
+--   -v admin_seed_email="$ADMIN_SEED_EMAIL"
+--   -v admin_seed_password="$ADMIN_SEED_PASSWORD"
+CREATE TEMP TABLE seed_admin_guard (
+    email text NOT NULL CHECK (length(btrim(email)) > 0),
+    password text NOT NULL CHECK (length(password) > 0)
+);
 
-DO $$
-BEGIN
-    IF NULLIF(:'admin_seed_email', '') IS NULL THEN
-        RAISE EXCEPTION 'ADMIN_SEED_EMAIL environment variable is required for admin seed.';
-    END IF;
+INSERT INTO seed_admin_guard (email, password)
+VALUES (:'admin_seed_email', :'admin_seed_password');
 
-    IF NULLIF(:'admin_seed_password', '') IS NULL THEN
-        RAISE EXCEPTION 'ADMIN_SEED_PASSWORD environment variable is required for admin seed.';
-    END IF;
-END;
-$$;
-
-INSERT INTO public.users OVERRIDING SYSTEM VALUE VALUES (2, :'admin_seed_email', crypt(:'admin_seed_password', gen_salt('bf')), 'System Administrator', 'avt-default.png', NULL, NULL, 'Seeded administrator account', 1, 1, NULL);
+INSERT INTO public.users OVERRIDING SYSTEM VALUE
+SELECT
+    2,
+    email,
+    crypt(password, gen_salt('bf')),
+    'System Administrator',
+    'avt-default.png',
+    NULL,
+    NULL,
+    'Seeded administrator account',
+    1,
+    1,
+    NULL
+FROM seed_admin_guard;
 INSERT INTO public.users OVERRIDING SYSTEM VALUE VALUES (5, 'user@user.com', '$2b$10$eIu8Ygb4S.rcxF6DoImSz.lxOVkm0FAwL0lxxPVMZHDWWGq0gbZqe', 'BQL Đội bóng', 'avt-default.png', NULL, NULL, NULL, 3, 0, 2);
+
+DROP TABLE seed_admin_guard;
 
 
 --
