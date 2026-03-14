@@ -51,13 +51,43 @@ module.exports = {
     }
     let user;
     try {
-      user = await UserModel.createUser(email, password);
+      user = await UserModel.createUser(email, password, { role: 'team_manager' });
       if (!user) {
         return res.status(400).send({ status: 'error', message: 'Đăng ký thất bại' });
       }
-      res.status(200).send({ status: 'success', message: 'Đăng ký thành công' });
+      return res.status(200).send({ status: 'success', message: 'Đăng ký thành công' });
     } catch (err) {
-      return res.status(500).send({ status: 'error', message: 'Email đã được đăng ký' });
+      if (err.code === '23505') {
+        return res.status(409).send({ status: 'error', message: 'Email đã được đăng ký' });
+      }
+      return next(err);
+    }
+  },
+
+  // POST /register/admin
+  postRegisterAdmin: async function (req, res, next) {
+    const { email, password, retype } = req.body;
+    if (!email || !password || !retype) {
+      return res.status(400).send({ status: 'error', message: 'Vui lòng nhập đầy đủ thông tin' });
+    }
+    if (password !== retype) {
+      return res.status(400).send({ status: 'error', message: 'Mật khẩu không khớp' });
+    }
+
+    try {
+      const adminUser = await UserModel.createUser(email, password, {
+        role: 'admin',
+        createdBy: req.user.id,
+      });
+      if (!adminUser) {
+        return res.status(400).send({ status: 'error', message: 'Tạo tài khoản admin thất bại' });
+      }
+      return res.status(200).send({ status: 'success', message: 'Tạo tài khoản admin thành công' });
+    } catch (err) {
+      if (err.code === '23505') {
+        return res.status(409).send({ status: 'error', message: 'Email đã được đăng ký' });
+      }
+      return next(err);
     }
   },
 

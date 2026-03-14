@@ -1,6 +1,9 @@
 CREATE DATABASE "DB_FootballTournament";
 ALTER DATABASE "DB_FootballTournament" OWNER TO postgres;
 \c "DB_FootballTournament"
+\set ON_ERROR_STOP on
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 --
 -- Name: delete_teams_statistics_on_status_change(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -264,6 +267,34 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: roles; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.roles (
+    id integer NOT NULL,
+    code character varying(50) NOT NULL,
+    name character varying(100) NOT NULL,
+    description character varying(300)
+);
+
+
+ALTER TABLE public.roles OWNER TO postgres;
+
+--
+-- Name: roles_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.roles ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.roles_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -276,7 +307,9 @@ CREATE TABLE public.users (
     birthday date,
     phone character varying(11),
     introduction character varying(300),
-    privilege integer DEFAULT 0 NOT NULL
+    role_id integer DEFAULT 3 NOT NULL,
+    privilege integer DEFAULT 0 NOT NULL,
+    created_by integer
 );
 
 
@@ -519,6 +552,22 @@ ALTER TABLE public.tournaments ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY 
 
 
 --
+-- Name: roles roles_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.roles
+    ADD CONSTRAINT roles_code_key UNIQUE (code);
+
+
+--
+-- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.roles
+    ADD CONSTRAINT roles_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: users Users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -532,6 +581,14 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT "Users_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: users users_role_privilege_check; Type: CHECK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.users
+    ADD CONSTRAINT users_role_privilege_check CHECK ((((privilege = 1) AND (role_id = 1)) OR ((privilege = 0) AND (role_id = ANY (ARRAY[2, 3])))));
 
 
 --
@@ -662,6 +719,22 @@ CREATE TRIGGER trigger_update_winner_on_scores_change AFTER UPDATE OF scores_1, 
 
 
 --
+-- Name: users users_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL NOT VALID;
+
+
+--
+-- Name: users users_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id);
+
+
+--
 -- Name: match_events match_events_match_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -763,33 +836,69 @@ INSERT INTO public.formats OVERRIDING SYSTEM VALUE VALUES (3, 'Chia bảng đấ
 
 
 --
--- TOC entry 4901 (class 0 OID 42905)
--- Dependencies: 229
--- Data for Name: match_events; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: roles; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (13, NULL, 42, 'start', '00p00s', NULL);
-INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (14, NULL, 42, 'end', '90p00s', NULL);
-INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (15, 5, 42, 'goal', '12p00s', 6);
-INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (16, 10, 42, 'goal', '15p00s', 7);
-INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (17, 5, 42, 'goal', '34p12s', 6);
-INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (18, 11, 42, 'goal', '67p30s', 7);
-INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (19, 7, 42, 'yellow_card', '88p44s', 6);
-INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (20, NULL, 43, 'start', '00p00s', NULL);
+INSERT INTO public.roles OVERRIDING SYSTEM VALUE VALUES (1, 'admin', 'Admin', 'Global administrator with full access, including creating other admins.');
+INSERT INTO public.roles OVERRIDING SYSTEM VALUE VALUES (2, 'tournament_organizer', 'Tournament Organizer', 'Organizer with tournament operation permissions.');
+INSERT INTO public.roles OVERRIDING SYSTEM VALUE VALUES (3, 'team_manager', 'Team Manager', 'Manager who owns and manages team resources.');
 
 
 --
--- TOC entry 4898 (class 0 OID 42826)
--- Dependencies: 226
--- Data for Name: matches; Type: TABLE DATA; Schema: public; Owner: postgres
+-- TOC entry 4888 (class 0 OID 26414)
+-- Dependencies: 216
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (42, 6, 7, 7, '2024-01-24', 1, 'Sân vận động Quân khu 7', false, 0, 2, 2, NULL, true, true, '01:25:00');
-INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (43, 8, 9, 7, '2024-01-24', 1, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, true, false, '07:00:00');
-INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (44, 6, 8, 7, '2024-01-25', 2, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, false, false, '10:00:00');
-INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (45, 7, 9, 7, '2024-01-25', 2, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, false, false, '13:00:00');
-INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (46, 6, 9, 7, '2024-01-26', 3, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, false, false, '10:00:00');
-INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (47, 7, 8, 7, '2024-01-26', 3, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, false, false, '13:00:00');
+-- Provide seed values via psql variables:
+--   -v admin_seed_email="$ADMIN_SEED_EMAIL"
+--   -v admin_seed_password="$ADMIN_SEED_PASSWORD"
+CREATE TEMP TABLE seed_admin_guard (
+    email text NOT NULL CHECK (length(btrim(email)) > 0),
+    password text NOT NULL CHECK (length(password) > 0)
+);
+
+INSERT INTO seed_admin_guard (email, password)
+VALUES (:'admin_seed_email', :'admin_seed_password');
+
+INSERT INTO public.users OVERRIDING SYSTEM VALUE
+SELECT
+    2,
+    email,
+    crypt(password, gen_salt('bf')),
+    'System Administrator',
+    'avt-default.png',
+    NULL,
+    NULL,
+    'Seeded administrator account',
+    1,
+    1,
+    NULL
+FROM seed_admin_guard;
+INSERT INTO public.users OVERRIDING SYSTEM VALUE VALUES (5, 'user@user.com', '$2b$10$eIu8Ygb4S.rcxF6DoImSz.lxOVkm0FAwL0lxxPVMZHDWWGq0gbZqe', 'BQL Đội bóng', 'avt-default.png', NULL, NULL, NULL, 3, 0, 2);
+
+DROP TABLE seed_admin_guard;
+
+
+--
+-- TOC entry 4890 (class 0 OID 34601)
+-- Dependencies: 218
+-- Data for Name: tournaments; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.tournaments OVERRIDING SYSTEM VALUE VALUES (7, 'HDT League Season 1', '2024-01-24', '2024-01-31', 'Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.635863047679!2d106.6797512748567!3d10.762521589385393!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f1bfc262bf1%3A0x4e843897f2900135!2zMjI3IMSQLiBOZ3V54buFbiBWxINuIEPhu6ssIFBoxrDhu51uZyA0LCBRdeG6rW4gNSwgVGjDoG5oIHBo4buRIEjhu5MgQ2jDrSBNaW5oLCBWaWV0bmFt!5e0!3m2!1sen!2s!4v1704601347126!5m2!1sen!2s', 'https://drive.google.com/file/d/1oM7kRm2XUMQ9Wdi5Gu6dAJj_fc0umABk/preview', 124, false, 1, 4, 5, false);
+
+
+--
+-- TOC entry 4894 (class 0 OID 34635)
+-- Dependencies: 222
+-- Data for Name: teams; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (8, 'FC HDT', 7, 5, 'Mr. Troussier', 'user@user.com', '0357031330', 'Trung cấp', 'Hội anh em văn phòng.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
+INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (9, 'FC ANH EM', 7, 2, 'Mr. Ánh', :'admin_seed_email', '0357031330', 'Sơ cấp', 'Cố gắng vì đam mê.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
+INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (6, 'DOMINO TEAM', 7, 5, 'Mr. Thiên Ân', 'user@user.com', '0357031330', 'Sơ cấp', 'Chơi vui là chính.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
+INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (7, 'FC AKT', 7, 5, 'Mr. Troussier', 'user@user.com', '0357031330', 'Chuyên nghiệp', 'Đội bóng chuyên nghiệp.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
 
 
 --
@@ -821,18 +930,6 @@ INSERT INTO public.players OVERRIDING SYSTEM VALUE VALUES (23, 'Trần Văn T', 
 
 
 --
--- TOC entry 4894 (class 0 OID 34635)
--- Dependencies: 222
--- Data for Name: teams; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (8, 'FC HDT', 7, 5, 'Mr. Troussier', 'user@user.com', '0357031330', 'Trung cấp', 'Hội anh em văn phòng.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
-INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (9, 'FC ANH EM', 7, 2, 'Mr. Ánh', 'admin@admin.com', '0357031330', 'Sơ cấp', 'Cố gắng vì đam mê.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
-INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (6, 'DOMINO TEAM', 7, 5, 'Mr. Thiên Ân', 'user@user.com', '0357031330', 'Sơ cấp', 'Chơi vui là chính.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
-INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (7, 'FC AKT', 7, 5, 'Mr. Troussier', 'user@user.com', '0357031330', 'Chuyên nghiệp', 'Đội bóng chuyên nghiệp.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
-
-
---
 -- TOC entry 4899 (class 0 OID 42863)
 -- Dependencies: 227
 -- Data for Name: teams_statistics; Type: TABLE DATA; Schema: public; Owner: postgres
@@ -845,22 +942,40 @@ INSERT INTO public.teams_statistics VALUES (9, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0);
 
 
 --
--- TOC entry 4890 (class 0 OID 34601)
--- Dependencies: 218
--- Data for Name: tournaments; Type: TABLE DATA; Schema: public; Owner: postgres
+-- TOC entry 4898 (class 0 OID 42826)
+-- Dependencies: 226
+-- Data for Name: matches; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.tournaments OVERRIDING SYSTEM VALUE VALUES (7, 'HDT League Season 1', '2024-01-24', '2024-01-31', 'Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.635863047679!2d106.6797512748567!3d10.762521589385393!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f1bfc262bf1%3A0x4e843897f2900135!2zMjI3IMSQLiBOZ3V54buFbiBWxINuIEPhu6ssIFBoxrDhu51uZyA0LCBRdeG6rW4gNSwgVGjDoG5oIHBo4buRIEjhu5MgQ2jDrSBNaW5oLCBWaWV0bmFt!5e0!3m2!1sen!2s!4v1704601347126!5m2!1sen!2s', 'https://drive.google.com/file/d/1oM7kRm2XUMQ9Wdi5Gu6dAJj_fc0umABk/preview', 124, false, 1, 4, 5, false);
+INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (42, 6, 7, 7, '2024-01-24', 1, 'Sân vận động Quân khu 7', false, 0, 2, 2, NULL, true, true, '01:25:00');
+INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (43, 8, 9, 7, '2024-01-24', 1, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, true, false, '07:00:00');
+INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (44, 6, 8, 7, '2024-01-25', 2, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, false, false, '10:00:00');
+INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (45, 7, 9, 7, '2024-01-25', 2, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, false, false, '13:00:00');
+INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (46, 6, 9, 7, '2024-01-26', 3, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, false, false, '10:00:00');
+INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (47, 7, 8, 7, '2024-01-26', 3, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, false, false, '13:00:00');
 
 
 --
--- TOC entry 4888 (class 0 OID 26414)
--- Dependencies: 216
--- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
+-- TOC entry 4901 (class 0 OID 42905)
+-- Dependencies: 229
+-- Data for Name: match_events; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.users OVERRIDING SYSTEM VALUE VALUES (2, 'admin@admin.com', '$2b$10$F0bKh3vD8URyJrTqXNA0MuaBEHTy2RC5UyK2jtBbnpLf/Nyfle8jS', 'BTC Giải đấu', 'avt-default.png', '2003-05-19', '0357031330', 'Đây là tài khoản BTC.', 1);
-INSERT INTO public.users OVERRIDING SYSTEM VALUE VALUES (5, 'user@user.com', '$2b$10$eIu8Ygb4S.rcxF6DoImSz.lxOVkm0FAwL0lxxPVMZHDWWGq0gbZqe', 'BQL Đội bóng', 'avt-default.png', NULL, NULL, NULL, 0);
+INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (13, NULL, 42, 'start', '00p00s', NULL);
+INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (14, NULL, 42, 'end', '90p00s', NULL);
+INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (15, 5, 42, 'goal', '12p00s', 6);
+INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (16, 10, 42, 'goal', '15p00s', 7);
+INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (17, 5, 42, 'goal', '34p12s', 6);
+INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (18, 11, 42, 'goal', '67p30s', 7);
+INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (19, 7, 42, 'yellow_card', '88p44s', 6);
+INSERT INTO public.match_events OVERRIDING SYSTEM VALUE VALUES (20, NULL, 43, 'start', '00p00s', NULL);
+
+
+--
+-- Name: roles_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.roles_id_seq', 3, true);
 
 
 --

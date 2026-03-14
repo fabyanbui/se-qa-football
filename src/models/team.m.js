@@ -1,6 +1,17 @@
 const dbTeams = require('../utils/database/dbTeams');
 
-module.exports = class TeamModel {
+async function buildTeamsWithPlayerCounts(teams) {
+  const mappedTeams = [];
+  for (const team of teams) {
+    const teamObj = new TeamModel(team);
+    teamObj.players = {};
+    teamObj.players.length = await dbTeams.countPlayers(team.id);
+    mappedTeams.push(teamObj);
+  }
+  return mappedTeams;
+}
+
+class TeamModel {
 
   constructor(team) {
     this.id = team.id;
@@ -30,28 +41,19 @@ module.exports = class TeamModel {
     return await dbTeams.createTeam(team);
   }
 
+  static async getAllTeams() {
+    const res = await dbTeams.getAllTeams();
+    return await buildTeamsWithPlayerCounts(res);
+  }
+
   static async getAllCurrentTeams() {
     const res = await dbTeams.getAllCurrentTeams();
-    let array = [];
-    for (const team of res) {
-      let teamObj = new TeamModel(team);
-      teamObj.players = {};
-      teamObj.players.length = await dbTeams.countPlayers(team.id);
-      array.push(teamObj);
-    }
-    return array;
+    return await buildTeamsWithPlayerCounts(res);
   }
 
   static async getAllActiveTeams() {
     const res = await dbTeams.getAllActiveTeams();
-    let array = [];
-    for (const team of res) {
-      let teamObj = new TeamModel(team);
-      teamObj.players = {};
-      teamObj.players.length = await dbTeams.countPlayers(team.id);
-      array.push(teamObj);
-    }
-    return array;
+    return await buildTeamsWithPlayerCounts(res);
   }
 
   static async getTeam(id) {
@@ -129,4 +131,4 @@ module.exports = class TeamModel {
 
 }
 
-
+module.exports = TeamModel;

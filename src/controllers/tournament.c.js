@@ -21,13 +21,13 @@ module.exports = {
       match.name1 = teams.find(t => t.id === match.teamId1)?.name;
       match.name2 = teams.find(t => t.id === match.teamId2)?.name;
     });
-    const mostGoalsMatch = matches.reduce((prev, curr) => {
+    const mostGoalsMatch = matches.length > 0 ? matches.reduce((prev, curr) => {
       if (curr.scores1 + curr.scores2 > prev.scores1 + prev.scores2) {
         return curr;
       } else {
         return prev;
       }
-    });
+    }) : null;
     const players = await PlayerModel.getPlayersStatistics(tournament.id);
     res.render('tournament/tournament', {
       title: "Giải đấu",

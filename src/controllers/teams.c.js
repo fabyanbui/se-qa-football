@@ -8,10 +8,11 @@ module.exports = {
     const user = req.isAuthenticated() ? req.user : null;
     const allTeams = await TeamModel.getAllCurrentTeams();
     const nPerPage = 9;
-    const page = req.query.page || 1;
+    const page = Number.parseInt(req.query.page, 10) || 1;
     const nOfPages = Math.ceil(allTeams.length / nPerPage);
+    const maxPage = nOfPages === 0 ? 1 : nOfPages;
+    if (page < 1 || page > maxPage) return next();
     const teams = allTeams.slice((page - 1) * nPerPage, page * nPerPage);
-    if (page > nOfPages) return next();
     res.render('teams/teams', {
       title: "Tất cả đội bóng",
       useTransHeader: false,

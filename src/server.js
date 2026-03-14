@@ -16,11 +16,23 @@ require('./middlewares/node-schedule.mw')();
 
 require('./routers/index.r')(app);
 
-
+const dbUsers = require('./utils/database/dbUsers');
 
 const http = require('http');
 const httpServer = http.createServer(app);
 const port = process.env.PORT || 3000;
-httpServer.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+
+async function bootstrapAndStart() {
+  await dbUsers.ensureSeedAdmin(
+    process.env.ADMIN_SEED_EMAIL,
+    process.env.ADMIN_SEED_PASSWORD
+  );
+  httpServer.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+  });
+}
+
+bootstrapAndStart().catch((err) => {
+  console.error('Server bootstrap failed:', err.message);
+  process.exit(1);
 });

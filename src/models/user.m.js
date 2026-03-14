@@ -1,5 +1,11 @@
 const dbUsers = require("../utils/database/dbUsers");
 
+const ROLE_BY_ID = {
+  1: 'admin',
+  2: 'tournament_organizer',
+  3: 'team_manager',
+};
+
 module.exports = class UserModel {
 
   // constructor(id, email, fullname, avatar, birthday, phone, introduction) {
@@ -32,16 +38,23 @@ module.exports = class UserModel {
     }
     this.phone = user.phone;
     this.introduction = user.introduction;
-    this.isAdmin = user.privilege === 1;
+
+    const roleFromDb = user.role || ROLE_BY_ID[user.role_id];
+    this.role = roleFromDb || (user.privilege === 1 ? 'admin' : 'team_manager');
+    this.roleId = user.role_id;
+    this.createdBy = user.created_by;
+    this.isAdmin = this.role === 'admin';
+    this.isTournamentOrganizer = this.role === 'tournament_organizer';
+    this.canManageTournament = this.isAdmin || this.isTournamentOrganizer;
   }
 
   // CREATE a new user
-  static async createUser(email, password) {
+  static async createUser(email, password, options = {}) {
     if (!email || !password) {
       return null;
     }
-    const result = await dbUsers.createUser(email, password);
-    if (!result) {
+    const result = await dbUsers.createUser(email, password, options);
+    if (!result || result.rowCount === 0) {
       return null;
     }
     return new UserModel(result.rows[0]);
