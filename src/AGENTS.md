@@ -88,6 +88,16 @@ ORDER BY table_name
 EOF
 ```
 
+Terminate all connections to the database (useful before dropping):
+```bash
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -d postgres -c "
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = 'DB_FootballTournament'
+AND pid <> pg_backend_pid();
+"
+```
+
 ### Test Accounts
 
 | Role  | Email             | Password |
