@@ -21,6 +21,12 @@ module.exports = {
     return res.rows[0];
   },
 
+  getMatchInTournament: async function (id, tournamentId) {
+    const query = `SELECT * FROM matches WHERE id = $1 AND tournament_id = $2`;
+    const res = await db.pool.query(query, [id, tournamentId]);
+    return res.rows[0];
+  },
+
   getMatchEvents: async function (id) {
     const query = `
       SELECT players.id, players.name, players.team_id, match_events.type, match_events.time

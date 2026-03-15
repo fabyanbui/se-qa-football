@@ -47,7 +47,8 @@
     </a>
     {{/if}}
     {{#if user.canManageTournament}}
-    <a href="/tournament/modifications" class="text-light fw-bold text-decoration-none me-4">
+    <a href="/management/tournaments"
+      class="text-light fw-bold text-decoration-none me-4 {{#ifEquals subNavigation 3}}active{{/ifEquals}}">
       <p class="h5">Quản lý giải</p>
     </a>
     {{/if}}

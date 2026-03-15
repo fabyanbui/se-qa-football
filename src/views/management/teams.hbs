@@ -49,12 +49,12 @@
             {{#if this.tournamentId}}
             {{#if this.status}}
             <td>
-              <a href="/tournament" class="link-success">Đã duyệt</a>
+              <a href="/tournament/{{this.tournamentId}}" class="link-success">Đã duyệt</a>
             </td>
             {{else}}
             {{#if this.profile}}
             <td>
-              <a href="/tournament" class="link-warning">Chưa duyệt</a>
+              <a href="/tournament/{{this.tournamentId}}" class="link-warning">Chưa duyệt</a>
             </td>
             {{else}}
             <td>
@@ -80,6 +80,13 @@
                   </button>
                 </a>
                 {{#unless this.tournamentId}}
+                <select class="form-select form-select-sm ms-2 enroll-tournament-select"
+                  data-team-id="{{this.id}}" {{#unless ../hasActiveTournament}}disabled{{/unless}}>
+                  <option value="">Chọn giải</option>
+                  {{#each ../activeTournaments}}
+                  <option value="{{this.id}}">{{this.name}}</option>
+                  {{/each}}
+                </select>
                 <button data-team-id="{{this.id}}" class="btn btn-outline-primary ms-2 btn-enroll" {{#unless
                   ../hasActiveTournament}}disabled{{/unless}}>
                   <i class="fas fa-sign-in-alt"></i>
@@ -117,19 +124,43 @@
     window.location.reload();
   }
 
-  const btnEnroll = document.querySelectorAll('.btn-enroll');
-  btnEnroll.forEach(btn => {
+  const enrollRows = document.querySelectorAll('tr');
+  enrollRows.forEach(row => {
+    const btn = row.querySelector('.btn-enroll');
+    const select = row.querySelector('.enroll-tournament-select');
+    if (!btn || !select) return;
+
+    const syncEnrollButtonState = () => {
+      if (select.disabled) {
+        btn.disabled = true;
+        return;
+      }
+      btn.disabled = !select.value;
+    };
+    syncEnrollButtonState();
+    select.addEventListener('change', syncEnrollButtonState);
+
     btn.addEventListener('click', async () => {
       const teamId = btn.getAttribute('data-team-id');
-      const response = await fetch(`/teams/${teamId}/enroll-current-tournament`, {
+      const tournamentId = Number.parseInt(select.value, 10);
+      if (!Number.isInteger(tournamentId)) {
+        alert('Vui lòng chọn giải đấu để đăng ký.');
+        return;
+      }
+
+      const response = await fetch(`/teams/${teamId}/enroll-tournament`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tournamentId }),
       });
       const result = await response.json();
       if (result.status === 'success') {
         window.location.reload();
         return;
       }
-      alert(result.msg || 'Không thể đăng ký đội vào giải hiện tại.');
+      alert(result.msg || 'Không thể đăng ký đội vào giải đã chọn.');
     });
   });
 </script>

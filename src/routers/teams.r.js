@@ -12,6 +12,7 @@ router.get('/', controller.getTeams);
 router.get('/create', checkAuthenticated, controller.getCreateTeam);
 router.post('/create-info', checkAuthenticated, controller.postCreateTeam);
 router.post('/:teamId/enroll-current-tournament', checkAuthenticated, controller.postEnrollCurrentTournament); // TODO: checkOwnTeam
+router.post('/:teamId/enroll-tournament', checkAuthenticated, controller.postEnrollCurrentTournament); // TODO: checkOwnTeam
 router.post('/:teamId/update-logo', checkAuthenticated, uploadLogo.single('logo'), controller.postUpdateLogo); // TODO: checkOwnTeam
 
 router.get('/:teamId', controller.getTeam);

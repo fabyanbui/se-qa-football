@@ -316,6 +316,20 @@ CREATE TABLE public.users (
 ALTER TABLE public.users OWNER TO postgres;
 
 --
+-- Name: user_roles; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_roles (
+    user_id integer NOT NULL,
+    role_id integer NOT NULL,
+    assigned_by integer,
+    assigned_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.user_roles OWNER TO postgres;
+
+--
 -- Name: Users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -528,6 +542,7 @@ CREATE TABLE public.tournaments (
     n_of_followers integer DEFAULT 0 NOT NULL,
     is_closed boolean DEFAULT false,
     format_id integer,
+    organizer_id integer NOT NULL,
     max_teams integer DEFAULT 0,
     n_of_players integer DEFAULT 5,
     require_tickets boolean DEFAULT false
@@ -584,11 +599,11 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: users users_role_privilege_check; Type: CHECK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: user_roles user_roles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE public.users
-    ADD CONSTRAINT users_role_privilege_check CHECK ((((privilege = 1) AND (role_id = 1)) OR ((privilege = 0) AND (role_id = ANY (ARRAY[2, 3])))));
+ALTER TABLE ONLY public.user_roles
+    ADD CONSTRAINT user_roles_pkey PRIMARY KEY (user_id, role_id);
 
 
 --
@@ -735,6 +750,30 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: user_roles user_roles_assigned_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_roles
+    ADD CONSTRAINT user_roles_assigned_by_fkey FOREIGN KEY (assigned_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: user_roles user_roles_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_roles
+    ADD CONSTRAINT user_roles_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id);
+
+
+--
+-- Name: user_roles user_roles_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_roles
+    ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: match_events match_events_match_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -823,6 +862,14 @@ ALTER TABLE ONLY public.tournaments
 
 
 --
+-- Name: tournaments tournaments_organizer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tournaments
+    ADD CONSTRAINT tournaments_organizer_id_fkey FOREIGN KEY (organizer_id) REFERENCES public.users(id);
+
+
+--
 
 --
 -- TOC entry 4892 (class 0 OID 34620)
@@ -881,12 +928,22 @@ DROP TABLE seed_admin_guard;
 
 
 --
+-- Data for Name: user_roles; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.user_roles (user_id, role_id, assigned_by)
+SELECT id, role_id, created_by
+FROM public.users
+ON CONFLICT (user_id, role_id) DO NOTHING;
+
+
+--
 -- TOC entry 4890 (class 0 OID 34601)
 -- Dependencies: 218
 -- Data for Name: tournaments; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.tournaments OVERRIDING SYSTEM VALUE VALUES (7, 'HDT League Season 1', '2024-01-24', '2024-01-31', 'Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.635863047679!2d106.6797512748567!3d10.762521589385393!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f1bfc262bf1%3A0x4e843897f2900135!2zMjI3IMSQLiBOZ3V54buFbiBWxINuIEPhu6ssIFBoxrDhu51uZyA0LCBRdeG6rW4gNSwgVGjDoG5oIHBo4buRIEjhu5MgQ2jDrSBNaW5oLCBWaWV0bmFt!5e0!3m2!1sen!2s!4v1704601347126!5m2!1sen!2s', 'https://drive.google.com/file/d/1oM7kRm2XUMQ9Wdi5Gu6dAJj_fc0umABk/preview', 124, false, 1, 4, 5, false);
+INSERT INTO public.tournaments OVERRIDING SYSTEM VALUE VALUES (7, 'HDT League Season 1', '2024-01-24', '2024-01-31', 'Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.635863047679!2d106.6797512748567!3d10.762521589385393!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f1bfc262bf1%3A0x4e843897f2900135!2zMjI3IMSQLiBOZ3V54buFbiBWxINuIEPhu6ssIFBoxrDhu51uZyA0LCBRdeG6rW4gNSwgVGjDoG5oIHBo4buRIEjhu5MgQ2jDrSBNaW5oLCBWaWV0bmFt!5e0!3m2!1sen!2s!4v1704601347126!5m2!1sen!2s', 'https://drive.google.com/file/d/1oM7kRm2XUMQ9Wdi5Gu6dAJj_fc0umABk/preview', 124, false, 1, 2, 4, 5, false);
 
 
 --

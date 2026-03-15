@@ -9,6 +9,7 @@ router.get('/', checkAuthenticated, controller.getTeamManagement);
 
 router.get('/tickets', checkAdmin, controller.getTicketManagement);
 router.get('/accounts', checkTournamentStaff, controller.getAccountManagement);
+router.get('/tournaments', checkTournamentStaff, controller.getTournamentManagement);
 router.put('/accounts/:userId/role', checkTournamentStaff, controller.putAccountRole);
 
 

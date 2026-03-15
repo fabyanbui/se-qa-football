@@ -18,6 +18,7 @@ require('./routers/index.r')(app);
 
 const dbUsers = require('./utils/database/dbUsers');
 const dbTeams = require('./utils/database/dbTeams');
+const dbTournaments = require('./utils/database/dbTournaments');
 
 const http = require('http');
 const httpServer = http.createServer(app);
@@ -30,6 +31,8 @@ async function bootstrapAndStart() {
     process.env.ADMIN_SEED_EMAIL,
     process.env.ADMIN_SEED_PASSWORD
   );
+  await dbUsers.ensureUserRolesBackfill();
+  await dbTournaments.ensureOrganizerIdBackfill(process.env.ADMIN_SEED_EMAIL);
   httpServer.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
   });

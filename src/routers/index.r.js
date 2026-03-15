@@ -1,5 +1,3 @@
-const { checkTournament } = require('../utils/tournament-helper');
-
 module.exports = function (app) {
 
   // "/", "about"
@@ -12,7 +10,7 @@ module.exports = function (app) {
   app.use('/profile', require('./profile.r'));
 
   // "/tournament/", "tournament/teams", "tournament/teams/leaderboard", "tournament/matches", "tournament/statistics", "tournament/statistics/players"
-  app.use('/tournament', checkTournament, require('./tournament.r'));
+  app.use('/tournament', require('./tournament.r'));
 
   // "/teams?page=1", "/teams/:teamId"
   app.use('/teams', require('./teams.r'));

@@ -16,7 +16,7 @@
             <th scope="col" class="text-start">Họ tên</th>
             <th scope="col" class="text-start">Email</th>
             <th scope="col">Vai trò</th>
-            <th scope="col">Thao tác</th>
+            <th scope="col">Bật / tắt vai trò</th>
           </tr>
         </thead>
         <tbody>
@@ -30,26 +30,31 @@
             <td class="text-start">{{this.fullname}}</td>
             <td class="text-start">{{this.email}}</td>
             <td>
-              <span class="role-badge badge {{#if this.isTournamentOrganizer}}bg-primary{{else}}bg-warning text-dark{{/if}}">
-                {{#if this.isTournamentOrganizer}}
+              <span class="role-badge role-organizer badge {{#if this.isTournamentOrganizer}}bg-primary{{else}}bg-light text-dark border{{/if}}">
                 Tournament Organizer
-                {{else}}
+              </span>
+              <span class="role-badge role-team-manager badge ms-2 {{#if this.isTeamManager}}bg-warning text-dark{{else}}bg-light text-dark border{{/if}}">
                 Team Manager
-                {{/if}}
               </span>
             </td>
             <td>
-              <div class="d-flex justify-content-center align-items-center">
-                <button class="btn btn-outline-warning btn-set-role" data-role="team_manager" {{#ifEquals this.role
-                  'team_manager'}}disabled{{/ifEquals}}>
-                  Đặt Team Manager
-                </button>
+              <div class="d-flex flex-column align-items-start">
                 {{#if ../user.isAdmin}}
-                <button class="btn btn-outline-primary btn-set-role ms-2" data-role="tournament_organizer" {{#if
-                  this.isTournamentOrganizer}}disabled{{/if}}>
-                  Đặt Organizer
-                </button>
+                <div class="form-check form-switch mb-1">
+                  <input class="form-check-input role-toggle" type="checkbox" role="switch"
+                    id="toggle-organizer-{{this.id}}" data-role="tournament_organizer" {{#if this.isTournamentOrganizer}}checked{{/if}}>
+                  <label class="form-check-label" for="toggle-organizer-{{this.id}}">
+                    Tournament Organizer
+                  </label>
+                </div>
                 {{/if}}
+                <div class="form-check form-switch">
+                  <input class="form-check-input role-toggle" type="checkbox" role="switch"
+                    id="toggle-team-manager-{{this.id}}" data-role="team_manager" {{#if this.isTeamManager}}checked{{/if}}>
+                  <label class="form-check-label" for="toggle-team-manager-{{this.id}}">
+                    Team Manager
+                  </label>
+                </div>
               </div>
             </td>
           </tr>
@@ -62,28 +67,81 @@
 </div>
 
 <script>
-  const setRoleButtons = document.querySelectorAll('.btn-set-role');
+  function setBadgeState(badge, enabled, activeClasses, inactiveClasses) {
+    const activeClassList = activeClasses.split(' ').filter(Boolean);
+    const inactiveClassList = inactiveClasses.split(' ').filter(Boolean);
+    [...activeClassList, ...inactiveClassList].forEach(className => badge.classList.remove(className));
+    (enabled ? activeClassList : inactiveClassList).forEach(className => badge.classList.add(className));
+  }
 
-  setRoleButtons.forEach(button => {
-    button.addEventListener('click', async () => {
-      const userId = button.closest('tr').dataset.userId;
-      const role = button.dataset.role;
+  function updateRoleStateOnRow(row, user) {
+    const isTournamentOrganizer = Boolean(user && user.isTournamentOrganizer);
+    const isTeamManager = Boolean(user && user.isTeamManager);
 
-      const response = await fetch(`/management/accounts/${userId}/role`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ role }),
-      });
+    const organizerBadge = row.querySelector('.role-organizer');
+    const teamManagerBadge = row.querySelector('.role-team-manager');
+    if (organizerBadge) {
+      setBadgeState(
+        organizerBadge,
+        isTournamentOrganizer,
+        'bg-primary',
+        'bg-light text-dark border'
+      );
+    }
+    if (teamManagerBadge) {
+      setBadgeState(
+        teamManagerBadge,
+        isTeamManager,
+        'bg-warning text-dark',
+        'bg-light text-dark border'
+      );
+    }
 
-      const result = await response.json();
-      if (result.status === 'success') {
-        window.location.reload();
-        return;
+    const organizerToggle = row.querySelector('.role-toggle[data-role="tournament_organizer"]');
+    const teamManagerToggle = row.querySelector('.role-toggle[data-role="team_manager"]');
+    if (organizerToggle) {
+      organizerToggle.checked = isTournamentOrganizer;
+    }
+    if (teamManagerToggle) {
+      teamManagerToggle.checked = isTeamManager;
+    }
+  }
+
+  const roleToggles = document.querySelectorAll('.role-toggle');
+
+  roleToggles.forEach(toggle => {
+    toggle.addEventListener('change', async () => {
+      const row = toggle.closest('tr');
+      const userId = row.dataset.userId;
+      const role = toggle.dataset.role;
+      const enabled = toggle.checked;
+      const previousValue = !enabled;
+      const rowToggles = row.querySelectorAll('.role-toggle');
+      rowToggles.forEach(input => input.disabled = true);
+
+      try {
+        const response = await fetch(`/management/accounts/${userId}/role`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ role, enabled }),
+        });
+
+        const result = await response.json();
+        if (!response.ok || result.status !== 'success') {
+          toggle.checked = previousValue;
+          alert(result.message || 'Không thể cập nhật vai trò.');
+          return;
+        }
+
+        updateRoleStateOnRow(row, result.user);
+      } catch (error) {
+        toggle.checked = previousValue;
+        alert('Không thể cập nhật vai trò. Vui lòng thử lại.');
+      } finally {
+        rowToggles.forEach(input => input.disabled = false);
       }
-
-      alert(result.message || 'Không thể cập nhật vai trò.');
     });
   });
 </script>

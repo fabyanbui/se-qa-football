@@ -1,5 +1,6 @@
 const TeamModel = require('../models/team.m');
 const PlayerModel = require('../models/player.m');
+const TournamentModel = require('../models/tournament.m');
 
 module.exports = {
 
@@ -171,6 +172,7 @@ module.exports = {
   },
 
   // POST /teams/:teamId/enroll-current-tournament
+  // POST /teams/:teamId/enroll-tournament
   postEnrollCurrentTournament: async function (req, res, next) {
     const user = req.isAuthenticated() ? req.user : null;
     const teamId = req.params.teamId;
@@ -183,14 +185,27 @@ module.exports = {
       return res.status(400).json({ status: 'error', msg: 'Đội bóng đã thuộc một giải đấu.' });
     }
     try {
-      const updatedCount = await TeamModel.enrollTeamToCurrentTournament(teamId);
+      let targetTournamentId = Number.parseInt(req.body?.tournamentId, 10);
+      if (!Number.isInteger(targetTournamentId)) {
+        targetTournamentId = await TournamentModel.getCurrentTournamentId();
+      }
+      if (!Number.isInteger(targetTournamentId)) {
+        return res.status(400).json({ status: 'error', msg: 'Vui lòng chọn một giải đấu đang hoạt động.' });
+      }
+
+      const targetTournament = await TournamentModel.getTournamentById(targetTournamentId);
+      if (!targetTournament || targetTournament.isClosed) {
+        return res.status(400).json({ status: 'error', msg: 'Giải đấu không hợp lệ hoặc đã đóng.' });
+      }
+
+      const updatedCount = await TeamModel.enrollTeamToTournament(teamId, targetTournamentId);
       if (updatedCount === 0) {
-        return res.status(400).json({ status: 'error', msg: 'Hiện chưa có giải đấu đang hoạt động để đăng ký.' });
+        return res.status(400).json({ status: 'error', msg: 'Không thể đăng ký đội bóng vào giải đấu đã chọn.' });
       }
       return res.status(200).json({ status: 'success' });
     } catch (err) {
       console.log(err);
-      return res.status(400).json({ status: 'error', msg: 'Không thể đăng ký đội bóng vào giải hiện tại.' });
+      return res.status(400).json({ status: 'error', msg: 'Không thể đăng ký đội bóng vào giải đấu đã chọn.' });
     }
   },
 
