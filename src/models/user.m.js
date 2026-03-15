@@ -92,6 +92,7 @@ module.exports = class UserModel {
     this.isAdmin = this.roles.includes('admin');
     this.isTournamentOrganizer = this.roles.includes('tournament_organizer');
     this.isTeamManager = this.roles.includes('team_manager');
+    this.canManageTeam = this.isAdmin || this.isTournamentOrganizer || this.isTeamManager;
     this.canManageTournament = this.isAdmin || this.isTournamentOrganizer;
   }
 

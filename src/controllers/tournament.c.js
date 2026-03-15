@@ -23,6 +23,26 @@ function formatMatchDate(match) {
   match.date = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 }
 
+function canConfigureTournament(user, tournament) {
+  if (!user || !tournament) {
+    return false;
+  }
+  if (user.isAdmin) {
+    return true;
+  }
+  if (!user.canManageTournament) {
+    return false;
+  }
+  return Number.parseInt(user.id, 10) === Number.parseInt(tournament.organizerId, 10);
+}
+
+function withTournamentPermissions(tournaments, user) {
+  return tournaments.map((tournament) => ({
+    ...tournament,
+    canConfigure: canConfigureTournament(user, tournament),
+  }));
+}
+
 async function loadTournamentMatch(matchId, tournamentId) {
   const match = await MatchModel.getMatchInTournament(matchId, tournamentId);
   if (!match) {
@@ -40,6 +60,40 @@ async function loadTournamentMatch(matchId, tournamentId) {
 }
 
 module.exports = {
+
+  // GET /tournament
+  getTournamentList: async function (req, res, next) {
+    const user = getUser(req);
+    try {
+      const tournaments = await TournamentModel.getAllActiveTournaments();
+      return res.render('tournament/list', {
+        title: "Giải đấu",
+        useTransHeader: false,
+        user: user,
+        tournaments: withTournamentPermissions(tournaments, user),
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  // GET /tournament/my
+  getMyTournaments: async function (req, res, next) {
+    const user = getUser(req);
+    try {
+      const tournaments = user.isAdmin
+        ? await TournamentModel.getAllActiveTournaments()
+        : await TournamentModel.getActiveTournamentsByOrganizer(user.id);
+      return res.render('tournament/my-tournaments', {
+        title: "Giải đấu của tôi",
+        useTransHeader: false,
+        user: user,
+        tournaments: withTournamentPermissions(tournaments, user),
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
 
   // GET /tournament/:tournamentId
   getTournament: async function (req, res) {

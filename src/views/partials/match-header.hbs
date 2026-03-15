@@ -22,7 +22,7 @@
     </div>
   </div>
 
-  {{#if user.canManageTournament}}
+  {{#if canConfigureTournament}}
   <div id="sub-navigation" class="d-flex justify-content-center align-items-center mt-2">
     <a href="{{tournamentBasePath}}/matches/{{match.id}}"
       class="text-light fw-bold text-decoration-none me-4 {{#ifEquals subNavigation 0}}active{{/ifEquals}}">

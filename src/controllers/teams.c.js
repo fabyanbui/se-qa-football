@@ -2,6 +2,20 @@ const TeamModel = require('../models/team.m');
 const PlayerModel = require('../models/player.m');
 const TournamentModel = require('../models/tournament.m');
 
+function canManageTeams(user) {
+  return Boolean(user && (user.isAdmin || user.isTeamManager || user.isTournamentOrganizer));
+}
+
+function canConfigureTeam(user, team) {
+  if (!canManageTeams(user) || !team) {
+    return false;
+  }
+  if (user.isAdmin) {
+    return true;
+  }
+  return Number.parseInt(team.ownerId, 10) === Number.parseInt(user.id, 10);
+}
+
 module.exports = {
 
   // GET /teams
@@ -13,14 +27,37 @@ module.exports = {
     const nOfPages = Math.ceil(allTeams.length / nPerPage);
     const maxPage = nOfPages === 0 ? 1 : nOfPages;
     if (page < 1 || page > maxPage) return next();
-    const teams = allTeams.slice((page - 1) * nPerPage, page * nPerPage);
+    const teams = allTeams
+      .slice((page - 1) * nPerPage, page * nPerPage)
+      .map((team) => ({
+        ...team,
+        canConfigure: canConfigureTeam(user, team),
+      }));
     res.render('teams/teams', {
       title: "Tất cả đội bóng",
       useTransHeader: false,
       user: user,
+      canManageTeams: canManageTeams(user),
       nOfPages: nOfPages,
       page: page,
       teams: teams,
+    });
+  },
+
+  // GET /teams/my
+  getMyTeams: async function (req, res) {
+    const user = req.isAuthenticated() ? req.user : null;
+    const ownTeams = user.isAdmin
+      ? await TeamModel.getAllTeams()
+      : await TeamModel.getTeamsByOwner(user.id);
+    const activeTournaments = await TournamentModel.getAllActiveTournaments();
+    res.render('teams/my-teams', {
+      title: "Đội bóng của tôi",
+      useTransHeader: false,
+      user: user,
+      teams: ownTeams || [],
+      hasActiveTournament: activeTournaments.length > 0,
+      activeTournaments: activeTournaments,
     });
   },
 
@@ -36,6 +73,7 @@ module.exports = {
       subNavigation: 0,
       user: user,
       team: team,
+      canConfigureTeam: canConfigureTeam(user, team),
     });
   },
 
@@ -51,6 +89,7 @@ module.exports = {
       subNavigation: 1,
       user: user,
       team: team,
+      canConfigureTeam: canConfigureTeam(user, team),
     });
   },
 
@@ -58,9 +97,8 @@ module.exports = {
   getEditTeam: async function (req, res, next) {
     const user = req.isAuthenticated() ? req.user : null;
     const teamId = req.params.teamId;
-    const team = await TeamModel.getTeam(teamId);
+    const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
-    if (team.ownerId != user.id) return next(); // check if user is owner of this team, TODO: use middleware instead
     res.render('teams/team-edit', {
       title: team.name,
       useTransHeader: true,
@@ -68,32 +106,30 @@ module.exports = {
       subSubNavigation: 0,
       user: user,
       team: team,
+      canConfigureTeam: canConfigureTeam(user, team),
     });
   },
 
   // POST /teams/:teamId/edit
   postEditTeam: async function (req, res, next) {
-    const user = req.isAuthenticated() ? req.user : null;
     const teamId = req.params.teamId;
-    const team = await TeamModel.getTeam(teamId);
+    const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
-    if (team.ownerId != user.id) return next(); // check if user is owner of this team, TODO: use middleware instead
     try {
       await TeamModel.updateTeam(teamId, req.body);
     } catch (err) {
       console.log(err);
-      res.redirect(`/teams/${teamId}/edit`);
+      return res.redirect(`/teams/${teamId}/edit`);
     }
-    res.redirect(`/teams/${teamId}`);
+    return res.redirect(`/teams/${teamId}`);
   },
 
   // GET /teams/:teamId/edit/members
   getEditTeamMembers: async function (req, res, next) {
     const user = req.isAuthenticated() ? req.user : null;
     const teamId = req.params.teamId;
-    const team = await TeamModel.getTeam(teamId);
+    const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
-    if (team.ownerId != user.id) return next();// check if user is owner of this team, TODO: use middleware instead
     res.render('teams/team-edit-members', {
       title: team.name,
       useTransHeader: true,
@@ -101,16 +137,15 @@ module.exports = {
       subSubNavigation: 1,
       user: user,
       team: team,
+      canConfigureTeam: canConfigureTeam(user, team),
     });
   },
 
   // POST /teams/:teamId/edit/members - to add new member
   postEditTeamMembers: async function (req, res, next) {
-    const user = req.isAuthenticated() ? req.user : null;
     const teamId = req.params.teamId;
-    const team = await TeamModel.getTeam(teamId);
+    const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
-    if (team.ownerId != user.id) return next();// check if user is owner of this team, TODO: use middleware instead
     try {
       const playerId = await PlayerModel.addNewPlayer(req.body, teamId);
       res.json({ status: 'success', playerId: playerId });
@@ -122,21 +157,17 @@ module.exports = {
 
   // POST /teams/:teamId/edit/members/:playerId/avatar
   postUpdatePlayerAvatar: async function (req, res, next) {
-    const user = req.isAuthenticated() ? req.user : null;
     const playerId = req.params.playerId;
     const player = await PlayerModel.getPlayer(playerId);
     if (!player) return next();
-    // if (player.teamId != user.id) return next();// check if user is owner of this team, TODO: use middleware instead
     res.status(200).json({ status: 'success', playerId: playerId });
   },
 
   // DELETE /teams/:teamId/edit/members/:playerId
   deleteTeamMember: async function (req, res, next) {
-    const user = req.isAuthenticated() ? req.user : null;
     const teamId = req.params.teamId;
-    const team = await TeamModel.getTeam(teamId);
+    const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
-    if (team.ownerId != user.id) return next();// check if user is owner of this team, TODO: use middleware instead
     const playerId = req.params.playerId;
     try {
       await TeamModel.removePlayer(teamId, playerId);
@@ -174,13 +205,9 @@ module.exports = {
   // POST /teams/:teamId/enroll-current-tournament
   // POST /teams/:teamId/enroll-tournament
   postEnrollCurrentTournament: async function (req, res, next) {
-    const user = req.isAuthenticated() ? req.user : null;
     const teamId = req.params.teamId;
-    const team = await TeamModel.getTeam(teamId);
+    const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
-    if (team.ownerId != user.id) {
-      return res.status(403).json({ status: 'error', msg: 'Bạn không có quyền đăng ký đội bóng này.' });
-    }
     if (team.tournamentId) {
       return res.status(400).json({ status: 'error', msg: 'Đội bóng đã thuộc một giải đấu.' });
     }
@@ -211,28 +238,24 @@ module.exports = {
 
   // POST /teams/:id/update-logo
   postUpdateLogo: async function (req, res, next) {
-    const user = req.isAuthenticated() ? req.user : null;
     const teamId = req.params.teamId;
-    const team = await TeamModel.getTeam(teamId);
+    const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
-    if (team.ownerId != user.id) return next();// check if user is owner of this team, TODO: use middleware instead
     res.status(200).json({ status: 'success', teamId: teamId });
   },
 
   // DELETE /teams/:teamId/delete
   deleteTeam: async function (req, res, next) {
-    const user = req.isAuthenticated() ? req.user : null;
     const teamId = req.params.teamId;
-    const team = await TeamModel.getTeam(teamId);
+    const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
-    if (team.ownerId != user.id) return next();// check if user is owner of this team, TODO: use middleware instead
     try {
       await TeamModel.deleteTeam(teamId);
     } catch (err) {
       console.log(err);
-      res.json({ status: 'error' });
+      return res.json({ status: 'error' });
     }
-    res.json({ status: 'success' });
+    return res.json({ status: 'success' });
   },
 
   // GET /teams/:teamId/statistics => not implemented yet
@@ -247,6 +270,7 @@ module.exports = {
       subNavigation: 2,
       user: user,
       team: team,
+      canConfigureTeam: canConfigureTeam(user, team),
     });
   },
 

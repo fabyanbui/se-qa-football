@@ -1,0 +1,154 @@
+<div class="row m-0 px-5 py-4">
+  <div class="px-5">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <p class="h1 lh-5 text-center text-primary-color mb-1">Đội bóng của tôi</p>
+        {{#if user.isAdmin}}
+        <p class="mb-0 text-muted">Bạn là admin, đang hiển thị tất cả đội bóng hiện có.</p>
+        {{else}}
+        <p class="mb-0 text-muted">Hiển thị tổng số <strong>{{teams.length}}</strong> đội bạn đang quản lý.</p>
+        {{/if}}
+      </div>
+      <div>
+        <a href="/teams" class="btn btn-outline-secondary me-2">Tất cả đội bóng</a>
+        <a href="/teams/create" class="btn btn-primary">Tạo đội bóng</a>
+      </div>
+    </div>
+
+    {{#if teams.length}}
+    <div class="table-responsive mt-3">
+      <table class="table">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col"></th>
+            <th scope="col" class="text-start">Tên đội</th>
+            <th scope="col">Trình độ</th>
+            <th scope="col">Tên liên hệ</th>
+            <th scope="col">Số điện thoại</th>
+            <th scope="col">Email</th>
+            <th scope="col">Trạng thái</th>
+            <th scope="col">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each teams}}
+          <tr>
+            <th scope="row">{{sum @index 1}}</th>
+            <td>
+              <img src="/img/teams/{{this.id}}/logo.png" alt="team-logo" height="40px" width="40px"
+                class="rounded-circle">
+            </td>
+            <td class="text-start">
+              <a href="/teams/{{this.id}}">{{this.name}}</a>
+            </td>
+            <td>{{this.level}}</td>
+            <td>{{this.contactName}}</td>
+            <td>{{this.contactPhone}}</td>
+            <td>{{this.contactEmail}}</td>
+            {{#if this.tournamentId}}
+            {{#if this.status}}
+            <td>
+              <a href="/tournament/{{this.tournamentId}}" class="link-success">Đã duyệt</a>
+            </td>
+            {{else}}
+            {{#if this.profile}}
+            <td>
+              <a href="/tournament/{{this.tournamentId}}" class="link-warning">Chưa duyệt</a>
+            </td>
+            {{else}}
+            <td>
+              <a href="/teams/{{this.id}}/edit" class="link-danger">Chưa nộp hồ sơ</a>
+            </td>
+            {{/if}}
+            {{/if}}
+            {{else}}
+            <td>
+              <span class="link-secondary">Chưa đăng ký giải</span>
+            </td>
+            {{/if}}
+            <td>
+              <div class="d-flex align-items-center justify-content-center">
+                <a href="/teams/{{this.id}}/edit" class="btn btn-outline-dark btn-sm">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="/teams/{{this.id}}/delete" class="btn btn-outline-danger btn-sm ms-2 btn-delete">
+                  <i class="fas fa-trash-alt"></i>
+                </a>
+                {{#unless this.tournamentId}}
+                <select class="form-select form-select-sm ms-2 enroll-tournament-select" data-team-id="{{this.id}}"
+                  {{#unless ../hasActiveTournament}}disabled{{/unless}}>
+                  <option value="">Chọn giải</option>
+                  {{#each ../activeTournaments}}
+                  <option value="{{this.id}}">{{this.name}}</option>
+                  {{/each}}
+                </select>
+                <button data-team-id="{{this.id}}" class="btn btn-outline-primary btn-sm ms-2 btn-enroll" {{#unless
+                  ../hasActiveTournament}}disabled{{/unless}}>
+                  <i class="fas fa-sign-in-alt"></i>
+                </button>
+                {{/unless}}
+              </div>
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+    {{else}}
+    <p class="h5 text-muted text-center my-5">Bạn chưa có đội bóng nào để cấu hình.</p>
+    {{/if}}
+  </div>
+</div>
+
+<script>
+  const btnDelete = document.querySelectorAll('.btn-delete');
+  btnDelete.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (confirm('Bạn có chắc chắn muốn xóa đội bóng này?')) {
+        fetch(btn.getAttribute('href'), { method: 'DELETE' }).then(() => window.location.reload());
+      }
+    });
+  });
+
+  const enrollRows = document.querySelectorAll('tr');
+  enrollRows.forEach(row => {
+    const btn = row.querySelector('.btn-enroll');
+    const select = row.querySelector('.enroll-tournament-select');
+    if (!btn || !select) return;
+
+    const syncEnrollButtonState = () => {
+      if (select.disabled) {
+        btn.disabled = true;
+        return;
+      }
+      btn.disabled = !select.value;
+    };
+    syncEnrollButtonState();
+    select.addEventListener('change', syncEnrollButtonState);
+
+    btn.addEventListener('click', async () => {
+      const teamId = btn.getAttribute('data-team-id');
+      const tournamentId = Number.parseInt(select.value, 10);
+      if (!Number.isInteger(tournamentId)) {
+        alert('Vui lòng chọn giải đấu để đăng ký.');
+        return;
+      }
+
+      const response = await fetch(`/teams/${teamId}/enroll-tournament`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tournamentId }),
+      });
+      const result = await response.json();
+      if (result.status === 'success') {
+        window.location.reload();
+        return;
+      }
+      alert(result.msg || 'Không thể đăng ký đội vào giải đã chọn.');
+    });
+  });
+</script>

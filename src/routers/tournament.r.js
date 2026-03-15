@@ -5,13 +5,15 @@ const controller = require('../controllers/tournament.c');
 const uploadLogo = require('../utils/multer/upload-logo');
 const uploadBanner = require('../utils/multer/upload-banner');
 
-const { checkTournamentOwnership } = require('../utils/auth-helper');
+const { checkTournamentOwnership, checkTournamentStaff } = require('../utils/auth-helper');
 const { checkTournament, checkTournamentContext, redirectToCurrentTournamentPath } = require('../utils/tournament-helper');
 
 const tournamentContextPath = '/:tournamentId(\\d+)';
 
+router.get('/', controller.getTournamentList);
+router.get('/my', checkTournamentStaff, controller.getMyTournaments);
+
 // legacy redirects
-router.get('/', redirectToCurrentTournamentPath(''));
 router.get('/teams', redirectToCurrentTournamentPath('/teams'));
 router.get('/teams/leaderboard', redirectToCurrentTournamentPath('/teams/leaderboard'));
 router.get('/matches', redirectToCurrentTournamentPath('/matches'));

@@ -3,9 +3,9 @@ const router = express.Router();
 
 const controller = require('../controllers/management.c');
 
-const { checkAuthenticated, checkAdmin, checkTournamentStaff } = require('../utils/auth-helper');
+const { checkAuthenticated, checkAdmin, checkTournamentStaff, checkTeamStaff } = require('../utils/auth-helper');
 
-router.get('/', checkAuthenticated, controller.getTeamManagement);
+router.get('/', checkAuthenticated, checkTeamStaff, controller.getTeamManagement);
 
 router.get('/tickets', checkAdmin, controller.getTicketManagement);
 router.get('/accounts', checkTournamentStaff, controller.getAccountManagement);

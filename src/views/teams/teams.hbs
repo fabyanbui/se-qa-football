@@ -6,6 +6,12 @@
   <div class="px-5">
     <p class="h1 lh-5 text-center text-primary-color">Tất cả đội bóng</p>
     <p class="text-center mb-2">Hiển thị tất cả các đội bóng tham gia @CodeOfDutyLeague</p>
+    {{#if canManageTeams}}
+    <div class="d-flex justify-content-end mb-3">
+      <a href="/teams/my" class="btn btn-outline-primary me-2">Đội của tôi</a>
+      <a href="/teams/create" class="btn btn-primary">Tạo đội bóng</a>
+    </div>
+    {{/if}}
 
     <form action="/teams/search" method="GET" class="mb-4">
       <div class="d-flex justify-content-between align-items-end">
@@ -44,7 +50,12 @@
                 <i class="fas fa-users me-2"></i>
                 <p class="mb-0">{{this.players.length}} thành viên</p>
               </div>
-              <a href="/teams/{{this.id}}" class="btn btn-primary">Xem chi tiết</a>
+              <div>
+                <a href="/teams/{{this.id}}" class="btn btn-primary">Xem chi tiết</a>
+                {{#if this.canConfigure}}
+                <a href="/teams/{{this.id}}/edit" class="btn btn-outline-success ms-2">Cấu hình</a>
+                {{/if}}
+              </div>
             </div>
           </div>
         </div>

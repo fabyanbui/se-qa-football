@@ -7,7 +7,9 @@ module.exports = {
   // GET /management
   getTeamManagement: async function (req, res) {
     const user = (req.isAuthenticated() ? req.user : null);
-    const ownTeams = await TeamModel.getTeamsByOwner(user.id);
+    const ownTeams = user.isAdmin
+      ? await TeamModel.getAllTeams()
+      : await TeamModel.getTeamsByOwner(user.id);
     const activeTournaments = await TournamentModel.getAllActiveTournaments();
     res.render('management/teams', {
       title: "Quản lý đội bóng",

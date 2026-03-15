@@ -1,9 +1,23 @@
 const TournamentModel = require('../models/tournament.m.js');
 
+function canConfigureTournament(user, tournament) {
+  if (!user || !tournament) {
+    return false;
+  }
+  if (user.isAdmin) {
+    return true;
+  }
+  if (!user.canManageTournament) {
+    return false;
+  }
+  return Number.parseInt(user.id, 10) === Number.parseInt(tournament.organizerId, 10);
+}
+
 function setTournamentContext(req, res, tournament) {
   req.tournament = tournament;
   res.locals.tournament = tournament;
   res.locals.tournamentBasePath = `/tournament/${tournament.id}`;
+  res.locals.canConfigureTournament = canConfigureTournament(req.user, tournament);
 }
 
 function getQueryString(req) {
@@ -26,7 +40,7 @@ async function checkTournament(req, res, next) {
   const tournament = await getCurrentActiveTournament();
   if (!tournament) {
     if (req.method === 'GET') {
-      return res.redirect('/create');
+      return res.redirect('/tournament');
     }
     return res.status(400).json({ status: 'error', message: 'Không có giải đấu đang hoạt động.' });
   }
@@ -77,7 +91,7 @@ function redirectToCurrentTournamentPath(pathResolver) {
   return async function (req, res) {
     const tournament = await getCurrentActiveTournament();
     if (!tournament) {
-      return res.redirect('/create');
+      return res.redirect('/tournament');
     }
     const pathSuffix = typeof pathResolver === 'function' ? pathResolver(req) : (pathResolver || '');
     return res.redirect(`/tournament/${tournament.id}${pathSuffix}${getQueryString(req)}`);

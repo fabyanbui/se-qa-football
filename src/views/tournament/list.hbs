@@ -1,0 +1,43 @@
+<div class="row m-0 px-5 py-4">
+  <div class="px-5">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <p class="h1 lh-5 text-center text-primary-color mb-1">Giải đấu</p>
+        <p class="mb-0 text-muted">Hiển thị tất cả giải đấu đang hoạt động.</p>
+      </div>
+      <div class="d-flex align-items-center">
+        {{#if user.canManageTournament}}
+        <a href="/tournament/my" class="btn btn-outline-primary me-2">Giải đấu của tôi</a>
+        <a href="/create" class="btn btn-primary">Tạo giải đấu</a>
+        {{/if}}
+      </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+      {{#each tournaments}}
+      <div class="col">
+        <div class="card h-100 border-black hover">
+          <img src="/img/tournaments/{{this.id}}/banner.png" class="card-img-top object-fit-cover" alt="{{this.name}}"
+            style="height: 180px;">
+          <div class="card-body">
+            <h5 class="card-title text-primary-color">{{this.name}}</h5>
+            <p class="card-text mb-1"><strong>Thời gian:</strong> {{this.timeStart}} - {{this.timeEnd}}</p>
+            <p class="card-text mb-1"><strong>Địa điểm:</strong> {{this.place}}</p>
+            <p class="card-text mb-0"><strong>Thể thức:</strong> {{this.format}} ({{this.nOfPlayers}} người)</p>
+          </div>
+          <div class="card-footer bg-white d-flex justify-content-between">
+            <a href="/tournament/{{this.id}}" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
+            {{#if this.canConfigure}}
+            <a href="/tournament/{{this.id}}/modifications" class="btn btn-outline-success btn-sm">Cấu hình</a>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+      {{/each}}
+    </div>
+
+    {{#unless tournaments.length}}
+    <p class="h5 text-muted text-center my-5">Hiện chưa có giải đấu đang hoạt động.</p>
+    {{/unless}}
+  </div>
+</div>
