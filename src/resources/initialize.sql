@@ -935,6 +935,9 @@ INSERT INTO public.user_roles (user_id, role_id, assigned_by)
 SELECT id, role_id, created_by
 FROM public.users
 ON CONFLICT (user_id, role_id) DO NOTHING;
+INSERT INTO public.user_roles (user_id, role_id, assigned_by)
+VALUES (5, 2, 2)
+ON CONFLICT (user_id, role_id) DO NOTHING;
 
 
 --
@@ -943,7 +946,7 @@ ON CONFLICT (user_id, role_id) DO NOTHING;
 -- Data for Name: tournaments; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.tournaments OVERRIDING SYSTEM VALUE VALUES (7, 'HDT League Season 1', '2024-01-24', '2024-01-31', 'Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.635863047679!2d106.6797512748567!3d10.762521589385393!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f1bfc262bf1%3A0x4e843897f2900135!2zMjI3IMSQLiBOZ3V54buFbiBWxINuIEPhu6ssIFBoxrDhu51uZyA0LCBRdeG6rW4gNSwgVGjDoG5oIHBo4buRIEjhu5MgQ2jDrSBNaW5oLCBWaWV0bmFt!5e0!3m2!1sen!2s!4v1704601347126!5m2!1sen!2s', 'https://drive.google.com/file/d/1oM7kRm2XUMQ9Wdi5Gu6dAJj_fc0umABk/preview', 124, false, 1, 2, 4, 5, false);
+INSERT INTO public.tournaments OVERRIDING SYSTEM VALUE VALUES (7, 'HDT League Season 1', '2024-01-24', '2024-01-31', 'Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.635863047679!2d106.6797512748567!3d10.762521589385393!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f1bfc262bf1%3A0x4e843897f2900135!2zMjI3IMSQLiBOZ3V54buFbiBWxINuIEPhu6ssIFBoxrDhu51uZyA0LCBRdeG6rW4gNSwgVGjDoG5oIHBo4buRIEjhu5MgQ2jDrSBNaW5oLCBWaWV0bmFt!5e0!3m2!1sen!2s!4v1704601347126!5m2!1sen!2s', 'https://drive.google.com/file/d/1oM7kRm2XUMQ9Wdi5Gu6dAJj_fc0umABk/preview', 124, false, 1, 5, 4, 5, false);
 
 
 --
@@ -953,7 +956,7 @@ INSERT INTO public.tournaments OVERRIDING SYSTEM VALUE VALUES (7, 'HDT League Se
 --
 
 INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (8, 'FC HDT', 7, 5, 'Mr. Troussier', 'user@user.com', '0357031330', 'Trung cấp', 'Hội anh em văn phòng.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
-INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (9, 'FC ANH EM', 7, 2, 'Mr. Ánh', :'admin_seed_email', '0357031330', 'Sơ cấp', 'Cố gắng vì đam mê.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
+INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (9, 'FC ANH EM', 7, 5, 'Mr. Ánh', 'user@user.com', '0357031330', 'Sơ cấp', 'Cố gắng vì đam mê.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
 INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (6, 'DOMINO TEAM', 7, 5, 'Mr. Thiên Ân', 'user@user.com', '0357031330', 'Sơ cấp', 'Chơi vui là chính.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
 INSERT INTO public.teams OVERRIDING SYSTEM VALUE VALUES (7, 'FC AKT', 7, 5, 'Mr. Troussier', 'user@user.com', '0357031330', 'Chuyên nghiệp', 'Đội bóng chuyên nghiệp.', false, 'https://drive.google.com/drive/folders/1sbmTpytDdDseVBqvUzzTXq9Im7bRXBsq', true);
 

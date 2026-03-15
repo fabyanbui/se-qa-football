@@ -1,6 +1,5 @@
 require('dotenv').config();
 const db = require('./db-config');
-const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 
 module.exports = {
 
@@ -49,6 +48,16 @@ module.exports = {
     return await db.pool.query(query);
   },
 
+  getTournamentsByOrganizer: async (organizerId) => {
+    const query = `
+      SELECT *
+      FROM tournaments
+      WHERE organizer_id = $1
+      ORDER BY is_closed ASC, time_start DESC, id DESC;
+    `;
+    return await db.pool.query(query, [organizerId]);
+  },
+
   getActiveTournamentsByOrganizer: async (organizerId) => {
     const query = `
       SELECT *
@@ -60,7 +69,7 @@ module.exports = {
     return await db.pool.query(query, [organizerId]);
   },
 
-  ensureOrganizerIdBackfill: async (seedAdminEmail) => {
+  ensureOrganizerIdBackfill: async () => {
     const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
@@ -69,6 +78,7 @@ module.exports = {
           to_regclass('public.tournaments') IS NOT NULL AS has_tournaments_table,
           to_regclass('public.users') IS NOT NULL AS has_users_table,
           to_regclass('public.roles') IS NOT NULL AS has_roles_table,
+          to_regclass('public.user_roles') IS NOT NULL AS has_user_roles_table,
           EXISTS (
             SELECT 1
             FROM information_schema.columns
@@ -81,31 +91,16 @@ module.exports = {
             FROM information_schema.columns
             WHERE table_schema = 'public'
               AND table_name = 'users'
-              AND column_name = 'email'
-          ) AS has_user_email,
-          EXISTS (
-            SELECT 1
-            FROM information_schema.columns
-            WHERE table_schema = 'public'
-              AND table_name = 'users'
               AND column_name = 'role_id'
-          ) AS has_user_role_id,
-          EXISTS (
-            SELECT 1
-            FROM information_schema.columns
-            WHERE table_schema = 'public'
-              AND table_name = 'users'
-              AND column_name = 'privilege'
-          ) AS has_user_privilege;
+          ) AS has_user_role_id;
       `);
       const {
         has_tournaments_table: hasTournamentsTable,
         has_users_table: hasUsersTable,
         has_roles_table: hasRolesTable,
+        has_user_roles_table: hasUserRolesTable,
         has_organizer_id: hasOrganizerId,
-        has_user_email: hasUserEmail,
         has_user_role_id: hasUserRoleId,
-        has_user_privilege: hasUserPrivilege,
       } = schemaInfo.rows[0];
 
       if (!hasTournamentsTable) {
@@ -124,52 +119,60 @@ module.exports = {
         createdColumn = true;
       }
 
+      await client.query(`
+        ALTER TABLE public.tournaments
+        ALTER COLUMN organizer_id DROP DEFAULT;
+      `);
+
       let safeOwnerId = null;
-      const normalizedSeedEmail = normalizeEmail(seedAdminEmail);
-      if (normalizedSeedEmail && hasUserEmail) {
-        const seedAdminOwner = await client.query(`
-          SELECT id
-          FROM public.users
-          WHERE lower(btrim(email)) = $1
-          ORDER BY id ASC
+      if (hasRolesTable && hasUserRolesTable) {
+        const organizerFromUserRoles = await client.query(`
+          SELECT u.id
+          FROM public.users u
+          WHERE COALESCE(u.privilege, 0) <> 1
+            AND EXISTS (
+              SELECT 1
+              FROM public.user_roles ur
+              INNER JOIN public.roles r
+                ON r.id = ur.role_id
+              WHERE ur.user_id = u.id
+                AND r.code = 'tournament_organizer'
+            )
+          ORDER BY u.id ASC
           LIMIT 1;
-        `, [normalizedSeedEmail]);
-        if (seedAdminOwner.rowCount > 0) {
-          safeOwnerId = seedAdminOwner.rows[0].id;
+        `);
+        if (organizerFromUserRoles.rowCount > 0) {
+          safeOwnerId = organizerFromUserRoles.rows[0].id;
         }
       }
 
       if (!safeOwnerId && hasRolesTable && hasUserRoleId) {
-        const adminByRole = await client.query(`
+        const organizerFromLegacyRole = await client.query(`
           SELECT u.id
           FROM public.users u
           INNER JOIN public.roles r
             ON r.id = u.role_id
-          WHERE r.code = 'admin'
+          WHERE COALESCE(u.privilege, 0) <> 1
+            AND r.code = 'tournament_organizer'
           ORDER BY u.id ASC
           LIMIT 1;
         `);
-        if (adminByRole.rowCount > 0) {
-          safeOwnerId = adminByRole.rows[0].id;
-        }
-      }
-
-      if (!safeOwnerId && hasUserPrivilege) {
-        const adminByPrivilege = await client.query(`
-          SELECT id
-          FROM public.users
-          WHERE privilege = 1
-          ORDER BY id ASC
-          LIMIT 1;
-        `);
-        if (adminByPrivilege.rowCount > 0) {
-          safeOwnerId = adminByPrivilege.rows[0].id;
+        if (organizerFromLegacyRole.rowCount > 0) {
+          safeOwnerId = organizerFromLegacyRole.rows[0].id;
         }
       }
 
       let updatedRows = 0;
       let setDefault = false;
       let setNotNull = false;
+
+      const nullCountResult = await client.query(`
+        SELECT COUNT(*)::integer AS count
+        FROM public.tournaments
+        WHERE organizer_id IS NULL;
+      `);
+      const nullCount = nullCountResult.rows[0].count;
+
       if (safeOwnerId !== null) {
         const safeOwnerIdAsNumber = Number.parseInt(safeOwnerId, 10);
         if (!Number.isInteger(safeOwnerIdAsNumber)) {
@@ -181,25 +184,29 @@ module.exports = {
         `);
         setDefault = true;
 
-        const updateResult = await client.query(`
-          UPDATE public.tournaments
-          SET organizer_id = $1
-          WHERE organizer_id IS NULL;
-        `, [safeOwnerIdAsNumber]);
-        updatedRows = updateResult.rowCount;
-
-        const nullCountResult = await client.query(`
-          SELECT COUNT(*)::integer AS count
-          FROM public.tournaments
-          WHERE organizer_id IS NULL;
-        `);
-        if (nullCountResult.rows[0].count === 0) {
-          await client.query(`
-            ALTER TABLE public.tournaments
-            ALTER COLUMN organizer_id SET NOT NULL;
-          `);
-          setNotNull = true;
+        if (nullCount > 0) {
+          const updateResult = await client.query(`
+            UPDATE public.tournaments
+            SET organizer_id = $1
+            WHERE organizer_id IS NULL;
+          `, [safeOwnerIdAsNumber]);
+          updatedRows = updateResult.rowCount;
         }
+      } else if (nullCount > 0) {
+        throw new Error('Cannot backfill tournament organizer_id without a non-admin tournament organizer account.');
+      }
+
+      const remainingNullCountResult = await client.query(`
+        SELECT COUNT(*)::integer AS count
+        FROM public.tournaments
+        WHERE organizer_id IS NULL;
+      `);
+      if (remainingNullCountResult.rows[0].count === 0) {
+        await client.query(`
+          ALTER TABLE public.tournaments
+          ALTER COLUMN organizer_id SET NOT NULL;
+        `);
+        setNotNull = true;
       }
 
       await client.query('COMMIT');

@@ -32,7 +32,7 @@ async function bootstrapAndStart() {
     process.env.ADMIN_SEED_PASSWORD
   );
   await dbUsers.ensureUserRolesBackfill();
-  await dbTournaments.ensureOrganizerIdBackfill(process.env.ADMIN_SEED_EMAIL);
+  await dbTournaments.ensureOrganizerIdBackfill();
   httpServer.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
   });

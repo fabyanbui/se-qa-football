@@ -40,7 +40,7 @@
       <p class="h5">Quản lý vé</p>
     </a>
     {{/if}}
-    {{#if user.canManageTournament}}
+    {{#if user.isAdmin}}
     <a href="/management/accounts"
       class="text-light fw-bold text-decoration-none me-4 {{#ifEquals subNavigation 2}}active{{/ifEquals}}">
       <p class="h5">Quản lý tài khoản</p>

@@ -1,18 +1,14 @@
 <div class="row m-0 px-5 py-4">
   <div class="px-5">
-    <div class="d-flex justify-content-between align-items-end mb-4">
-      <div>
-        <p class="h1 lh-5 text-center text-primary-color mb-1">Đội bóng của tôi</p>
-        {{#if user.isAdmin}}
-        <p class="mb-0 text-muted">Bạn là admin, đang hiển thị tất cả đội bóng hiện có.</p>
-        {{else}}
-        <p class="mb-0 text-muted">Hiển thị tổng số <strong>{{teams.length}}</strong> đội bạn đang quản lý.</p>
-        {{/if}}
-      </div>
-      <div>
-        <a href="/teams" class="btn btn-outline-secondary me-2">Tất cả đội bóng</a>
-        <a href="/teams/create" class="btn btn-primary">Tạo đội bóng</a>
-      </div>
+    <p class="h1 lh-5 text-center text-primary-color mb-1">Đội bóng của tôi</p>
+    {{#if user.isAdmin}}
+    <p class="text-center mb-2 text-muted">Bạn là admin, đang hiển thị tất cả đội bóng hiện có.</p>
+    {{else}}
+    <p class="text-center mb-2 text-muted">Hiển thị tổng số <strong>{{teams.length}}</strong> đội bạn đang quản lý.</p>
+    {{/if}}
+    <div class="d-flex justify-content-end mb-3">
+      <a href="/teams" class="btn btn-outline-secondary me-2">Tất cả đội bóng</a>
+      <a href="/teams/create" class="btn btn-primary">Tạo đội bóng</a>
     </div>
 
     {{#if teams.length}}

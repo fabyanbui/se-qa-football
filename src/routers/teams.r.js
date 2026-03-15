@@ -8,6 +8,7 @@ const uploadAvatar = require('../utils/multer/upload-player-avatar');
 const { checkAuthenticated, checkTeamStaff, checkOwnTeam } = require('../utils/auth-helper');
 
 router.get('/', controller.getTeams);
+router.get('/search', controller.getSearchTeams);
 
 router.get('/my', checkAuthenticated, checkTeamStaff, controller.getMyTeams);
 

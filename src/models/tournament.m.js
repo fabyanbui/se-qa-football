@@ -98,6 +98,18 @@ module.exports = class TournamentModel {
     return Promise.all(result.rows.map(row => TournamentModel.buildTournamentModel(row)));
   }
 
+  static async getTournamentsByOrganizer(organizerId) {
+    const parsedOrganizerId = Number.parseInt(organizerId, 10);
+    if (!Number.isInteger(parsedOrganizerId)) {
+      return [];
+    }
+    const result = await dbTournaments.getTournamentsByOrganizer(parsedOrganizerId);
+    if (!result || result.rowCount === 0) {
+      return [];
+    }
+    return Promise.all(result.rows.map(row => TournamentModel.buildTournamentModel(row)));
+  }
+
   static async getActiveTournamentsByOrganizer(organizerId) {
     const parsedOrganizerId = Number.parseInt(organizerId, 10);
     if (!Number.isInteger(parsedOrganizerId)) {

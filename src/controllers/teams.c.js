@@ -16,6 +16,30 @@ function canConfigureTeam(user, team) {
   return Number.parseInt(team.ownerId, 10) === Number.parseInt(user.id, 10);
 }
 
+function parseTeamId(rawTeamId) {
+  const teamId = Number.parseInt(rawTeamId, 10);
+  if (!Number.isInteger(teamId) || teamId < 1) {
+    return null;
+  }
+  return teamId;
+}
+
+function handleInvalidTeamId(req, res, next) {
+  if (req.method === 'GET') {
+    return next();
+  }
+  return res.status(400).json({ status: 'error', msg: 'Mã đội bóng không hợp lệ.' });
+}
+
+function getValidatedTeamId(req, res, next) {
+  const teamId = parseTeamId(req.params.teamId);
+  if (teamId === null) {
+    handleInvalidTeamId(req, res, next);
+    return null;
+  }
+  return teamId;
+}
+
 module.exports = {
 
   // GET /teams
@@ -44,6 +68,39 @@ module.exports = {
     });
   },
 
+  // GET /teams/search?name=
+  getSearchTeams: async function (req, res, next) {
+    const user = req.isAuthenticated() ? req.user : null;
+    const searchKeyword = typeof req.query.name === 'string' ? req.query.name.trim() : '';
+    if (!searchKeyword) {
+      return res.redirect('/teams');
+    }
+
+    const normalizedKeyword = searchKeyword.toLowerCase();
+
+    try {
+      const teams = (await TeamModel.getAllTeams())
+        .filter((team) => String(team.name || '').toLowerCase().includes(normalizedKeyword))
+        .map((team) => ({
+          ...team,
+          canConfigure: canConfigureTeam(user, team),
+        }));
+
+      return res.render('teams/teams', {
+        title: "Tất cả đội bóng",
+        useTransHeader: false,
+        user: user,
+        canManageTeams: canManageTeams(user),
+        nOfPages: 0,
+        page: 1,
+        teams: teams,
+        searchKeyword: searchKeyword,
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
   // GET /teams/my
   getMyTeams: async function (req, res) {
     const user = req.isAuthenticated() ? req.user : null;
@@ -64,7 +121,8 @@ module.exports = {
   // GET /teams/:teamId
   getTeam: async function (req, res, next) {
     const user = req.isAuthenticated() ? req.user : null;
-    const teamId = req.params.teamId;
+    const teamId = getValidatedTeamId(req, res, next);
+    if (!teamId) return;
     const team = await TeamModel.getTeam(teamId);
     if (!team) return next();
     res.render('teams/team-info', {
@@ -80,7 +138,8 @@ module.exports = {
   // GET /teams/:teamId/members
   getTeamMembers: async function (req, res, next) {
     const user = req.isAuthenticated() ? req.user : null;
-    const teamId = req.params.teamId;
+    const teamId = getValidatedTeamId(req, res, next);
+    if (!teamId) return;
     const team = await TeamModel.getTeam(teamId);
     if (!team) return next();
     res.render('teams/team-members', {
@@ -96,7 +155,8 @@ module.exports = {
   // GET /teams/:teamId/edit
   getEditTeam: async function (req, res, next) {
     const user = req.isAuthenticated() ? req.user : null;
-    const teamId = req.params.teamId;
+    const teamId = getValidatedTeamId(req, res, next);
+    if (!teamId) return;
     const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
     res.render('teams/team-edit', {
@@ -112,7 +172,8 @@ module.exports = {
 
   // POST /teams/:teamId/edit
   postEditTeam: async function (req, res, next) {
-    const teamId = req.params.teamId;
+    const teamId = getValidatedTeamId(req, res, next);
+    if (!teamId) return;
     const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
     try {
@@ -127,7 +188,8 @@ module.exports = {
   // GET /teams/:teamId/edit/members
   getEditTeamMembers: async function (req, res, next) {
     const user = req.isAuthenticated() ? req.user : null;
-    const teamId = req.params.teamId;
+    const teamId = getValidatedTeamId(req, res, next);
+    if (!teamId) return;
     const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
     res.render('teams/team-edit-members', {
@@ -143,7 +205,8 @@ module.exports = {
 
   // POST /teams/:teamId/edit/members - to add new member
   postEditTeamMembers: async function (req, res, next) {
-    const teamId = req.params.teamId;
+    const teamId = getValidatedTeamId(req, res, next);
+    if (!teamId) return;
     const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
     try {
@@ -165,7 +228,8 @@ module.exports = {
 
   // DELETE /teams/:teamId/edit/members/:playerId
   deleteTeamMember: async function (req, res, next) {
-    const teamId = req.params.teamId;
+    const teamId = getValidatedTeamId(req, res, next);
+    if (!teamId) return;
     const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
     const playerId = req.params.playerId;
@@ -205,7 +269,8 @@ module.exports = {
   // POST /teams/:teamId/enroll-current-tournament
   // POST /teams/:teamId/enroll-tournament
   postEnrollCurrentTournament: async function (req, res, next) {
-    const teamId = req.params.teamId;
+    const teamId = getValidatedTeamId(req, res, next);
+    if (!teamId) return;
     const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
     if (team.tournamentId) {
@@ -238,7 +303,8 @@ module.exports = {
 
   // POST /teams/:id/update-logo
   postUpdateLogo: async function (req, res, next) {
-    const teamId = req.params.teamId;
+    const teamId = getValidatedTeamId(req, res, next);
+    if (!teamId) return;
     const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
     res.status(200).json({ status: 'success', teamId: teamId });
@@ -246,7 +312,8 @@ module.exports = {
 
   // DELETE /teams/:teamId/delete
   deleteTeam: async function (req, res, next) {
-    const teamId = req.params.teamId;
+    const teamId = getValidatedTeamId(req, res, next);
+    if (!teamId) return;
     const team = req.team || await TeamModel.getTeam(teamId);
     if (!team) return next();
     try {
@@ -261,7 +328,8 @@ module.exports = {
   // GET /teams/:teamId/statistics => not implemented yet
   getTeamStatistics: async function (req, res, next) {
     const user = req.isAuthenticated() ? req.user : null;
-    const teamId = req.params.teamId;
+    const teamId = getValidatedTeamId(req, res, next);
+    if (!teamId) return;
     const team = await TeamModel.getTeam(teamId);
     if (!team) return next();
     res.render('teams/team-statistics', {
