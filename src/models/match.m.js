@@ -67,8 +67,23 @@ module.exports = class Match {
 
   static async getMatch(id) {
     const match = await dbMatches.getMatch(id);
+    if (!match) {
+      return null;
+    }
+    return await Match.buildMatchWithEvents(match);
+  }
+
+  static async getMatchInTournament(id, tournamentId) {
+    const match = await dbMatches.getMatchInTournament(id, tournamentId);
+    if (!match) {
+      return null;
+    }
+    return await Match.buildMatchWithEvents(match);
+  }
+
+  static async buildMatchWithEvents(match) {
     let matchObj = new Match(match);
-    matchObj.events = await dbMatches.getMatchEvents(id);
+    matchObj.events = await dbMatches.getMatchEvents(matchObj.id);
     // each event is an object with properties: name, team_id, type, time
     matchObj.yellowCards1 = matchObj.events.filter(event => event.type === 'yellow_card' && event.team_id === matchObj.teamId1);
     matchObj.yellowCards2 = matchObj.events.filter(event => event.type === 'yellow_card' && event.team_id === matchObj.teamId2);

@@ -6,19 +6,19 @@
       {{#ifEquals subSubNavigation 0}}
       <a class="h6 fw-bold active">Cấu hình</a>
       {{else}}
-      <a href="/tournament/modifications" class="h6 fw-bold text-decoration-none">Cấu hình</a>
+      <a href="{{tournamentBasePath}}/modifications" class="h6 fw-bold text-decoration-none">Cấu hình</a>
       {{/ifEquals}}
 
       {{#ifEquals subSubNavigation 1}}
       <a class="h6 fw-bold ms-3 active">Đội bóng</a>
       {{else}}
-      <a href="/tournament/modifications/teams" class="h6 fw-bold ms-3 text-decoration-none">Đội bóng</a>
+      <a href="{{tournamentBasePath}}/modifications/teams" class="h6 fw-bold ms-3 text-decoration-none">Đội bóng</a>
       {{/ifEquals}}
 
       {{#ifEquals subSubNavigation 2}}
       <a class="h6 fw-bold ms-3 active">Lịch đấu</a>
       {{else}}
-      <a href="/tournament/modifications/matches" class="h6 fw-bold ms-3 text-decoration-none">Lịch đấu</a>
+      <a href="{{tournamentBasePath}}/modifications/matches" class="h6 fw-bold ms-3 text-decoration-none">Lịch đấu</a>
       {{/ifEquals}}
 
     </div>
@@ -106,7 +106,7 @@
   acceptButtons.forEach(button => {
     button.addEventListener('click', async () => {
       const teamId = button.dataset.accept;
-      const response = await fetch(`/tournament/modifications/teams/${teamId}/accept`, {
+      const response = await fetch(`{{tournamentBasePath}}/modifications/teams/${teamId}/accept`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -127,7 +127,7 @@
   rejectButtons.forEach(button => {
     button.addEventListener('click', async () => {
       const teamId = button.dataset.reject;
-      const response = await fetch(`/tournament/modifications/teams/${teamId}/reject`, {
+      const response = await fetch(`{{tournamentBasePath}}/modifications/teams/${teamId}/reject`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

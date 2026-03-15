@@ -1,20 +1,17 @@
-{{> management-header}}
-
-<div class="bg-white-color px-5 py-3 text-center">
-  <div class="row mx-5 mb-2">
-
-    <div class="d-flex justify-content-between align-items-end mb-1">
-      <div class="text-muted m-0">
-        Hiển thị tổng số <strong>{{teams.length}}</strong> đội.
-      </div>
-      <a href="/teams/create">
-        <button class="btn btn-success">
-          <i class="fas fa-plus"></i>
-          <span class="ms-1">Thêm đội</span>
-        </button>
-      </a>
+<div class="row m-0 px-5 py-4">
+  <div class="px-5">
+    <p class="h1 lh-5 text-center text-primary-color mb-1">Đội bóng của tôi</p>
+    {{#if user.isAdmin}}
+    <p class="text-center mb-2 text-muted">Bạn là admin, đang hiển thị tất cả đội bóng hiện có.</p>
+    {{else}}
+    <p class="text-center mb-2 text-muted">Hiển thị tổng số <strong>{{teams.length}}</strong> đội bạn đang quản lý.</p>
+    {{/if}}
+    <div class="d-flex justify-content-end mb-3">
+      <a href="/teams" class="btn btn-outline-secondary me-2">Tất cả đội bóng</a>
+      <a href="/teams/create" class="btn btn-primary">Tạo đội bóng</a>
     </div>
 
+    {{#if teams.length}}
     <div class="table-responsive mt-3">
       <table class="table">
         <thead class="table-light">
@@ -31,7 +28,6 @@
           </tr>
         </thead>
         <tbody>
-
           {{#each teams}}
           <tr>
             <th scope="row">{{sum @index 1}}</th>
@@ -69,25 +65,21 @@
             {{/if}}
             <td>
               <div class="d-flex align-items-center justify-content-center">
-                <a href="/teams/{{this.id}}/edit">
-                  <button class="btn btn-outline-dark">
-                    <i class="fas fa-edit"></i>
-                  </button>
+                <a href="/teams/{{this.id}}/edit" class="btn btn-outline-dark btn-sm">
+                  <i class="fas fa-edit"></i>
                 </a>
-                <a href="/teams/{{this.id}}/delete" class="btn-delete">
-                  <button class="btn btn-outline-danger ms-2 ">
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
+                <a href="/teams/{{this.id}}/delete" class="btn btn-outline-danger btn-sm ms-2 btn-delete">
+                  <i class="fas fa-trash-alt"></i>
                 </a>
                 {{#unless this.tournamentId}}
-                <select class="form-select form-select-sm ms-2 enroll-tournament-select"
-                  data-team-id="{{this.id}}" {{#unless ../hasActiveTournament}}disabled{{/unless}}>
+                <select class="form-select form-select-sm ms-2 enroll-tournament-select" data-team-id="{{this.id}}"
+                  {{#unless ../hasActiveTournament}}disabled{{/unless}}>
                   <option value="">Chọn giải</option>
                   {{#each ../activeTournaments}}
                   <option value="{{this.id}}">{{this.name}}</option>
                   {{/each}}
                 </select>
-                <button data-team-id="{{this.id}}" class="btn btn-outline-primary ms-2 btn-enroll" {{#unless
+                <button data-team-id="{{this.id}}" class="btn btn-outline-primary btn-sm ms-2 btn-enroll" {{#unless
                   ../hasActiveTournament}}disabled{{/unless}}>
                   <i class="fas fa-sign-in-alt"></i>
                 </button>
@@ -96,12 +88,12 @@
             </td>
           </tr>
           {{/each}}
-
-
         </tbody>
       </table>
     </div>
-
+    {{else}}
+    <p class="h5 text-muted text-center my-5">Bạn chưa có đội bóng nào để cấu hình.</p>
+    {{/if}}
   </div>
 </div>
 
@@ -110,19 +102,11 @@
   btnDelete.forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      const confirmDelete = confirm('Bạn có chắc chắn muốn xóa đội bóng này?');
-      if (confirmDelete) {
-        deleteTeam(btn.getAttribute('href'));
+      if (confirm('Bạn có chắc chắn muốn xóa đội bóng này?')) {
+        fetch(btn.getAttribute('href'), { method: 'DELETE' }).then(() => window.location.reload());
       }
-    })
-  });
-
-  async function deleteTeam(url) {
-    const response = await fetch(url, {
-      method: 'DELETE',
     });
-    window.location.reload();
-  }
+  });
 
   const enrollRows = document.querySelectorAll('tr');
   enrollRows.forEach(row => {

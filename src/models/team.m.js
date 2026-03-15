@@ -46,13 +46,13 @@ class TeamModel {
     return await buildTeamsWithPlayerCounts(res);
   }
 
-  static async getAllCurrentTeams() {
-    const res = await dbTeams.getAllCurrentTeams();
+  static async getAllCurrentTeams(tournamentId) {
+    const res = await dbTeams.getAllCurrentTeams(tournamentId);
     return await buildTeamsWithPlayerCounts(res);
   }
 
-  static async getAllActiveTeams() {
-    const res = await dbTeams.getAllActiveTeams();
+  static async getAllActiveTeams(tournamentId) {
+    const res = await dbTeams.getAllActiveTeams(tournamentId);
     return await buildTeamsWithPlayerCounts(res);
   }
 
@@ -84,17 +84,25 @@ class TeamModel {
     return await dbTeams.removePlayer(teamId, playerId);
   }
 
-  static async updateTeamStatus(id, status) {
-    return await dbTeams.updateTeamStatus(id, status);
+  static async updateTeamStatus(id, status, tournamentId) {
+    return await dbTeams.updateTeamStatus(id, status, tournamentId);
   }
 
-  static async getTeamsStatistics() {
-    return await dbTeams.getTeamsStatistics();
+  static async enrollTeamToCurrentTournament(id) {
+    return await dbTeams.enrollTeamToCurrentTournament(id);
   }
 
-  static async getTeamsLeaderboard() {
-    const teams = await TeamModel.getAllActiveTeams();
-    const teamStatistics = await TeamModel.getTeamsStatistics();
+  static async enrollTeamToTournament(id, tournamentId) {
+    return await dbTeams.enrollTeamToTournament(id, tournamentId);
+  }
+
+  static async getTeamsStatistics(tournamentId) {
+    return await dbTeams.getTeamsStatistics(tournamentId);
+  }
+
+  static async getTeamsLeaderboard(tournamentId) {
+    const teams = await TeamModel.getAllActiveTeams(tournamentId);
+    const teamStatistics = await TeamModel.getTeamsStatistics(tournamentId);
     teams.forEach(team => {
       const statistics = teamStatistics.find(stat => stat.team_id === team.id);
       if (statistics) {

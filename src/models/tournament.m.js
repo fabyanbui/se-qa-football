@@ -25,15 +25,23 @@ module.exports = class TournamentModel {
     this.name = tournament.name;
     this.timeStart = convertDate(tournament.time_start);
     this.timeEnd = convertDate(tournament.time_end);
+    this.isClosed = tournament.is_closed;
     this.place = tournament.place;
     this.mapURL = tournament.map_url;
     this.rulesURL = tournament.rules_url;
     this.nOfFollowers = tournament.n_of_followers;
     this.formatId = tournament.format_id;
+    this.organizerId = tournament.organizer_id ?? tournament.organizerId;
     this.format = tournament.format;
     this.maxTeams = tournament.max_teams;
     this.nOfPlayers = tournament.n_of_players;
     this.requireTickets = tournament.require_tickets;
+  }
+
+  static async buildTournamentModel(tournamentRow) {
+    const tournament = new TournamentModel(tournamentRow);
+    tournament.format = await dbFormats.getFormatName(tournament.formatId);
+    return tournament;
   }
 
   // count number of tournaments
@@ -51,26 +59,67 @@ module.exports = class TournamentModel {
   // Create a new tournament
   static async create(tournament) {
     const result = await dbTournaments.create(tournament);
-    return true;
+    if (!result || result.rowCount === 0) {
+      return null;
+    }
+    return await TournamentModel.buildTournamentModel(result.rows[0]);
   }
 
   // Get current tournament
   static async getCurrentTournament() {
     const result = await dbTournaments.getCurrentTournament();
-    if (!result.rows) {
+    if (!result || result.rowCount === 0) {
       return null;
     }
-    const tournament = new TournamentModel(result.rows[0]);
-    tournament.format = await dbFormats.getFormatName(tournament.formatId);
-    return tournament;
+    return await TournamentModel.buildTournamentModel(result.rows[0]);
   }
 
   static async getCurrentTournamentId() {
     const result = await dbTournaments.getCurrentTournamentId();
-    if (!result.rows) {
+    if (!result || result.rowCount === 0) {
       return null;
     }
     return result.rows[0].id;
+  }
+
+  static async getTournamentById(id) {
+    const result = await dbTournaments.getTournamentById(id);
+    if (!result || result.rowCount === 0) {
+      return null;
+    }
+    return await TournamentModel.buildTournamentModel(result.rows[0]);
+  }
+
+  static async getAllActiveTournaments() {
+    const result = await dbTournaments.getAllActiveTournaments();
+    if (!result || result.rowCount === 0) {
+      return [];
+    }
+    return Promise.all(result.rows.map(row => TournamentModel.buildTournamentModel(row)));
+  }
+
+  static async getTournamentsByOrganizer(organizerId) {
+    const parsedOrganizerId = Number.parseInt(organizerId, 10);
+    if (!Number.isInteger(parsedOrganizerId)) {
+      return [];
+    }
+    const result = await dbTournaments.getTournamentsByOrganizer(parsedOrganizerId);
+    if (!result || result.rowCount === 0) {
+      return [];
+    }
+    return Promise.all(result.rows.map(row => TournamentModel.buildTournamentModel(row)));
+  }
+
+  static async getActiveTournamentsByOrganizer(organizerId) {
+    const parsedOrganizerId = Number.parseInt(organizerId, 10);
+    if (!Number.isInteger(parsedOrganizerId)) {
+      return [];
+    }
+    const result = await dbTournaments.getActiveTournamentsByOrganizer(parsedOrganizerId);
+    if (!result || result.rowCount === 0) {
+      return [];
+    }
+    return Promise.all(result.rows.map(row => TournamentModel.buildTournamentModel(row)));
   }
 
   // Count number of active teams in tournament

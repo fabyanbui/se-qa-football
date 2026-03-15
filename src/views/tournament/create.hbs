@@ -276,6 +276,12 @@
       .then(response => response.json())
       .then(data => {
         if (data.status == 'success') {
+          const tournamentId = Number.parseInt(data.tournamentId, 10);
+          if (!Number.isInteger(tournamentId)) {
+            throw new Error('Không xác định được giải đấu vừa tạo.');
+          }
+          const tournamentBasePath = `/tournament/${tournamentId}`;
+
           fetch('/create/logo', {
             method: 'POST',
             body: dataLogo,
@@ -290,7 +296,7 @@
                   .then(response => response.json())
                   .then(data => {
                     if (data.status == 'success') {
-                      window.location.href = '/tournament/modifications';
+                      window.location.href = `${tournamentBasePath}/modifications`;
                     } else {
                       throw new Error(data.message);
                     }

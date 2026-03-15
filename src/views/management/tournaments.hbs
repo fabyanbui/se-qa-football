@@ -1,0 +1,64 @@
+{{> management-header}}
+
+<div class="bg-white-color px-5 py-3 text-center">
+  <div class="row mx-5 mb-2">
+    <div class="text-muted m-0 text-start">
+      {{#if user.isAdmin}}
+      Hiển thị tổng số <strong>{{tournaments.length}}</strong> giải đấu đang hoạt động.
+      {{else}}
+      Hiển thị tổng số <strong>{{tournaments.length}}</strong> giải đấu bạn sở hữu.
+      {{/if}}
+    </div>
+
+    {{#if tournaments.length}}
+    <div class="table-responsive mt-3">
+      <table class="table">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col" class="text-start">Tên giải</th>
+            <th scope="col">Bắt đầu</th>
+            <th scope="col">Kết thúc</th>
+            <th scope="col" class="text-start">Địa điểm</th>
+            {{#if user.isAdmin}}
+            <th scope="col">Organizer ID</th>
+            {{/if}}
+            <th scope="col">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each tournaments}}
+          <tr>
+            <th scope="row">{{sum @index 1}}</th>
+            <td class="text-start">
+              <a href="/tournament/{{this.id}}" class="text-decoration-none">{{this.name}}</a>
+            </td>
+            <td>{{this.timeStart}}</td>
+            <td>{{this.timeEnd}}</td>
+            <td class="text-start">{{this.place}}</td>
+            {{#if ../user.isAdmin}}
+            <td>{{this.organizerId}}</td>
+            {{/if}}
+            <td>
+              <div class="d-flex justify-content-center align-items-center">
+                <a href="/tournament/{{this.id}}/modifications" class="btn btn-outline-primary btn-sm">
+                  Cấu hình
+                </a>
+                <a href="/tournament/{{this.id}}/modifications/teams" class="btn btn-outline-success btn-sm ms-2">
+                  Đội bóng
+                </a>
+                <a href="/tournament/{{this.id}}/modifications/matches" class="btn btn-outline-dark btn-sm ms-2">
+                  Lịch đấu
+                </a>
+              </div>
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+    {{else}}
+    <p class="h5 text-muted my-5">Không có giải đấu phù hợp để quản lý.</p>
+    {{/if}}
+  </div>
+</div>

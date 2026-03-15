@@ -1,0 +1,83 @@
+{{> management-header}}
+
+<div class="bg-white-color px-5 py-3 text-center">
+  <div class="row mx-5 mb-2">
+
+    <div class="text-muted m-0 text-start">
+      Hiển thị tổng số <strong>{{accounts.length}}</strong> tài khoản (không bao gồm admin).
+    </div>
+
+    {{#if accounts.length}}
+    <div class="table-responsive mt-3">
+      <table class="table">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col"></th>
+            <th scope="col" class="text-start">Họ tên</th>
+            <th scope="col" class="text-start">Email</th>
+            <th scope="col">Vai trò</th>
+            <th scope="col" class="text-start">Giải đấu quản lý</th>
+            <th scope="col" class="text-start">Đội bóng quản lý</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each accounts}}
+          <tr data-user-id="{{this.id}}">
+            <th scope="row">{{sum @index 1}}</th>
+            <td>
+              <img src="/img/avatars/{{this.avatar}}" alt="avatar" height="40px" width="40px"
+                class="rounded-circle object-fit-cover">
+            </td>
+            <td class="text-start">{{this.fullname}}</td>
+            <td class="text-start">{{this.email}}</td>
+            <td>
+              <span class="role-badge role-organizer badge {{#if this.isTournamentOrganizer}}bg-primary{{else}}bg-light text-dark border{{/if}}">
+                Tournament Organizer
+              </span>
+              <span class="role-badge role-team-manager badge ms-2 {{#if this.isTeamManager}}bg-warning text-dark{{else}}bg-light text-dark border{{/if}}">
+                Team Manager
+              </span>
+            </td>
+            <td class="text-start">
+              {{#if this.ownedTournaments.length}}
+              <div class="small text-muted mb-1">Tổng: {{this.ownedTournaments.length}} giải</div>
+              <ul class="list-unstyled mb-0">
+                {{#each this.ownedTournaments}}
+                <li class="mb-1">
+                  <a href="/tournament/{{this.id}}" class="text-decoration-none">{{this.name}}</a>
+                  {{#if this.isClosed}}
+                  <span class="text-muted">(đã đóng)</span>
+                  {{/if}}
+                </li>
+                {{/each}}
+              </ul>
+              {{else}}
+              <span class="text-muted">Không có giải đấu</span>
+              {{/if}}
+            </td>
+            <td class="text-start">
+              {{#if this.managedTeams.length}}
+              <div class="small text-muted mb-1">Tổng: {{this.managedTeams.length}} đội</div>
+              <ul class="list-unstyled mb-0">
+                {{#each this.managedTeams}}
+                <li class="mb-1">
+                  <a href="/teams/{{this.id}}" class="text-decoration-none">{{this.name}}</a>
+                </li>
+                {{/each}}
+              </ul>
+              {{else}}
+              <span class="text-muted">Không có đội bóng</span>
+              {{/if}}
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+    {{else}}
+    <p class="h5 text-muted my-5">Không có tài khoản phù hợp để hiển thị.</p>
+    {{/if}}
+
+  </div>
+</div>

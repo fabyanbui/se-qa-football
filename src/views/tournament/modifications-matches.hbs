@@ -6,19 +6,19 @@
       {{#ifEquals subSubNavigation 0}}
       <a class="h6 fw-bold active">Cấu hình</a>
       {{else}}
-      <a href="/tournament/modifications" class="h6 fw-bold text-decoration-none">Cấu hình</a>
+      <a href="{{tournamentBasePath}}/modifications" class="h6 fw-bold text-decoration-none">Cấu hình</a>
       {{/ifEquals}}
 
       {{#ifEquals subSubNavigation 1}}
       <a class="h6 fw-bold ms-3 active">Đội bóng</a>
       {{else}}
-      <a href="/tournament/modifications/teams" class="h6 fw-bold ms-3 text-decoration-none">Đội bóng</a>
+      <a href="{{tournamentBasePath}}/modifications/teams" class="h6 fw-bold ms-3 text-decoration-none">Đội bóng</a>
       {{/ifEquals}}
 
       {{#ifEquals subSubNavigation 2}}
       <a class="h6 fw-bold ms-3 active">Lịch đấu</a>
       {{else}}
-      <a href="/tournament/modifications/matches" class="h6 fw-bold ms-3 text-decoration-none">Lịch đấu</a>
+      <a href="{{tournamentBasePath}}/modifications/matches" class="h6 fw-bold ms-3 text-decoration-none">Lịch đấu</a>
       {{/ifEquals}}
 
     </div>
@@ -33,7 +33,7 @@
         <div class="dropdown-menu" aria-labelledby="triggerId">
           {{#each this.rounds}}
           <a class="dropdown-item {{#ifEquals ../round (sum @index 1)}}disabled{{/ifEquals}}"
-            href="/tournament/modifications/matches?round={{sum @index 1}}">Vòng {{sum @index 1}}</a>
+            href="{{tournamentBasePath}}/modifications/matches?round={{sum @index 1}}">Vòng {{sum @index 1}}</a>
           {{/each}}
         </div>
       </div>
@@ -46,7 +46,7 @@
       </a>
     </div>
 
-    <form id="matches-table" action="/tournament/modifications/matches" method="PUT">
+    <form id="matches-table" action="{{tournamentBasePath}}/modifications/matches" method="PUT">
 
       <div class="my-3" id="table-teams">
         <table class="table">
@@ -106,7 +106,7 @@
               </td>
               <td>
                 {{!-- Edit --}}
-                <a href="/tournament/matches/{{this.id}}/edit" class="btn btn-outline-dark">
+                <a href="{{tournamentBasePath}}/matches/{{this.id}}/edit" class="btn btn-outline-dark">
                   <i class="fas fa-edit"></i>
                 </a>
               </td>
@@ -162,7 +162,7 @@
       body: JSON.stringify({ matches }),
     }
     console.log(options.body);
-    fetch('/tournament/modifications/matches', options)
+    fetch('{{tournamentBasePath}}/modifications/matches', options)
       .then(res => res.json())
       .then(data => {
         console.log(data);
