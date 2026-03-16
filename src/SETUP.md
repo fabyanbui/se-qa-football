@@ -211,6 +211,8 @@ PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -d DB_FootballTournament \
   -c "SELECT * FROM teams_statistics;" \
   -c "SELECT * FROM players;" \
   -c "SELECT * FROM matches;" \
+  -c "SELECT * FROM referees;" \
+  -c "SELECT * FROM match_referees;" \
   -c "SELECT * FROM match_events;"
 ```
 

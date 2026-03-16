@@ -58,6 +58,7 @@
               <th scope="col">Địa điểm</th>
               <th scope="col">Ngày</th>
               <th scope="col">Giờ</th>
+              <th scope="col" class="text-start">Trọng tài</th>
               <th scope="col">Thao tác</th>
             </tr>
           </thead>
@@ -102,6 +103,41 @@
                 <div class="input-group">
                   <input type="time" class="form-control" placeholder="Giờ" style="width: 3rem;" value="{{this.time}}"
                     name="time">
+                </div>
+              </td>
+              <td class="text-start" style="min-width: 18rem;">
+                <div class="mb-1">
+                  <small class="fw-bold">Chính</small>
+                  <select class="form-select form-select-sm" name="mainRefereeId">
+                    <option value="">Chọn trọng tài</option>
+                    {{#each ../referees}}
+                    <option value="{{this.id}}" {{#ifEquals this.id ../refereeRoleMap.main}}selected{{/ifEquals}}>
+                      {{this.fullName}}
+                    </option>
+                    {{/each}}
+                  </select>
+                </div>
+                <div class="mb-1">
+                  <small class="fw-bold">Trợ lý 1</small>
+                  <select class="form-select form-select-sm" name="assistant1RefereeId">
+                    <option value="">Chọn trợ lý</option>
+                    {{#each ../referees}}
+                    <option value="{{this.id}}" {{#ifEquals this.id ../refereeRoleMap.assistant_1}}selected{{/ifEquals}}>
+                      {{this.fullName}}
+                    </option>
+                    {{/each}}
+                  </select>
+                </div>
+                <div>
+                  <small class="fw-bold">Trợ lý 2</small>
+                  <select class="form-select form-select-sm" name="assistant2RefereeId">
+                    <option value="">Chọn trợ lý</option>
+                    {{#each ../referees}}
+                    <option value="{{this.id}}" {{#ifEquals this.id ../refereeRoleMap.assistant_2}}selected{{/ifEquals}}>
+                      {{this.fullName}}
+                    </option>
+                    {{/each}}
+                  </select>
                 </div>
               </td>
               <td>
@@ -151,6 +187,11 @@
         date: row.querySelector('[name="date"]').value,
         time: row.querySelector('[name="time"]').value,
       }
+      match.referees = [
+        { refereeId: row.querySelector('[name="mainRefereeId"]').value, role: 'main' },
+        { refereeId: row.querySelector('[name="assistant1RefereeId"]').value, role: 'assistant_1' },
+        { refereeId: row.querySelector('[name="assistant2RefereeId"]').value, role: 'assistant_2' },
+      ].filter(assignment => assignment.refereeId);
       matches.push(match);
     }
 

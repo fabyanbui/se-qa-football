@@ -138,7 +138,8 @@ src/
 │   ├── tournament.m.js
 │   ├── team.m.js
 │   ├── match.m.js
-│   └── player.m.js
+│   ├── player.m.js
+│   └── referee.m.js
 ├── utils/
 │   ├── database/
 │   │   ├── db-config.js    # PostgreSQL pool (reads from .env)
@@ -157,7 +158,7 @@ src/
 
 ## Database Schema
 
-9 tables in PostgreSQL database `DB_FootballTournament`:
+11 tables in PostgreSQL database `DB_FootballTournament`:
 
 | Table              | Description |
 |--------------------|-------------|
@@ -169,11 +170,16 @@ src/
 | `teams_statistics` | Auto-updated stats (wins, draws, losses, goals, cards) |
 | `players`          | Players belonging to teams |
 | `matches`          | Scheduled matches with scores and status flags |
+| `referees`         | Tournament-scoped referee roster |
+| `match_referees`   | Match referee assignments with role (`main`, `assistant_*`, `var`) |
 | `match_events`     | In-match events: `goal`, `own_goal`, `red_card`, `yellow_card`, `start`, `end` |
 
 Key relationships:
 - `teams.tournament_id` → `tournaments.id`
 - `matches.team_id_1/2` → `teams.id`
+- `referees.tournament_id` → `tournaments.id`
+- `match_referees.match_id` → `matches.id`
+- `match_referees.referee_id` → `referees.id`
 - `match_events.match_id` → `matches.id`
 - `match_events.player_id` → `players.id`
 - `teams_statistics.team_id` → `teams.id` (auto-managed by DB triggers)

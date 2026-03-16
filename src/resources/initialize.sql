@@ -567,6 +567,53 @@ ALTER TABLE public.tournaments ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY 
 
 
 --
+-- Name: referees; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.referees (
+    id integer NOT NULL,
+    tournament_id integer NOT NULL,
+    full_name character varying(100) NOT NULL,
+    phone character varying(20),
+    email character varying(320),
+    notes character varying(300),
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.referees OWNER TO postgres;
+
+--
+-- Name: referees_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.referees ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.referees_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: match_referees; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.match_referees (
+    match_id integer NOT NULL,
+    referee_id integer NOT NULL,
+    tournament_id integer NOT NULL,
+    role character varying(30) NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.match_referees OWNER TO postgres;
+
+
+--
 -- Name: roles roles_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -636,6 +683,54 @@ ALTER TABLE public.match_events
 
 ALTER TABLE ONLY public.matches
     ADD CONSTRAINT matches_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: matches matches_id_tournament_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.matches
+    ADD CONSTRAINT matches_id_tournament_id_key UNIQUE (id, tournament_id);
+
+
+--
+-- Name: referees referees_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.referees
+    ADD CONSTRAINT referees_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: referees referees_id_tournament_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.referees
+    ADD CONSTRAINT referees_id_tournament_id_key UNIQUE (id, tournament_id);
+
+
+--
+-- Name: match_referees match_referees_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.match_referees
+    ADD CONSTRAINT match_referees_pkey PRIMARY KEY (match_id, referee_id, role);
+
+
+--
+-- Name: match_referees match_referees_match_id_role_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.match_referees
+    ADD CONSTRAINT match_referees_match_id_role_key UNIQUE (match_id, role);
+
+
+--
+-- Name: match_referees match_referees_role_check; Type: CHECK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.match_referees
+    ADD CONSTRAINT match_referees_role_check CHECK (((role)::text = ANY ((ARRAY['main'::character varying, 'assistant_1'::character varying, 'assistant_2'::character varying, 'fourth_official'::character varying, 'var'::character varying, 'avar'::character varying])::text[]))) NOT VALID;
 
 
 --
@@ -822,6 +917,30 @@ ALTER TABLE ONLY public.matches
 
 
 --
+-- Name: referees referees_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.referees
+    ADD CONSTRAINT referees_tournament_id_fkey FOREIGN KEY (tournament_id) REFERENCES public.tournaments(id) ON DELETE CASCADE;
+
+
+--
+-- Name: match_referees match_referees_match_tournament_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.match_referees
+    ADD CONSTRAINT match_referees_match_tournament_fkey FOREIGN KEY (match_id, tournament_id) REFERENCES public.matches(id, tournament_id) ON DELETE CASCADE;
+
+
+--
+-- Name: match_referees match_referees_referee_tournament_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.match_referees
+    ADD CONSTRAINT match_referees_referee_tournament_fkey FOREIGN KEY (referee_id, tournament_id) REFERENCES public.referees(id, tournament_id) ON DELETE CASCADE;
+
+
+--
 -- Name: players players_team_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -950,6 +1069,16 @@ INSERT INTO public.tournaments OVERRIDING SYSTEM VALUE VALUES (7, 'HDT League Se
 
 
 --
+-- Data for Name: referees; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.referees OVERRIDING SYSTEM VALUE VALUES (1, 7, 'Nguyễn Trọng Minh', '0901000101', 'trong.minh@football.local', 'Trọng tài chính cấp quốc gia', '2024-01-20 09:00:00+07');
+INSERT INTO public.referees OVERRIDING SYSTEM VALUE VALUES (2, 7, 'Phạm Quốc An', '0901000102', 'quoc.an@football.local', 'Trợ lý trọng tài biên', '2024-01-20 09:05:00+07');
+INSERT INTO public.referees OVERRIDING SYSTEM VALUE VALUES (3, 7, 'Lê Thanh Phúc', '0901000103', 'thanh.phuc@football.local', 'Trợ lý trọng tài biên', '2024-01-20 09:10:00+07');
+INSERT INTO public.referees OVERRIDING SYSTEM VALUE VALUES (4, 7, 'Đỗ Hải Nam', '0901000104', 'hai.nam@football.local', 'Trọng tài thứ tư', '2024-01-20 09:15:00+07');
+
+
+--
 -- TOC entry 4894 (class 0 OID 34635)
 -- Dependencies: 222
 -- Data for Name: teams; Type: TABLE DATA; Schema: public; Owner: postgres
@@ -1013,6 +1142,26 @@ INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (44, 6, 8, 7, '2024-01
 INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (45, 7, 9, 7, '2024-01-25', 2, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, false, false, '13:00:00');
 INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (46, 6, 9, 7, '2024-01-26', 3, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, false, false, '10:00:00');
 INSERT INTO public.matches OVERRIDING SYSTEM VALUE VALUES (47, 7, 8, 7, '2024-01-26', 3, 'Sân vận động Quân khu 7', false, 0, 0, 0, NULL, false, false, '13:00:00');
+
+
+--
+-- Data for Name: match_referees; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.match_referees VALUES (42, 1, 7, 'main', '2024-01-24 00:45:00+07');
+INSERT INTO public.match_referees VALUES (42, 2, 7, 'assistant_1', '2024-01-24 00:45:00+07');
+INSERT INTO public.match_referees VALUES (42, 3, 7, 'assistant_2', '2024-01-24 00:45:00+07');
+INSERT INTO public.match_referees VALUES (43, 4, 7, 'main', '2024-01-24 06:20:00+07');
+INSERT INTO public.match_referees VALUES (43, 2, 7, 'assistant_1', '2024-01-24 06:20:00+07');
+INSERT INTO public.match_referees VALUES (43, 3, 7, 'assistant_2', '2024-01-24 06:20:00+07');
+INSERT INTO public.match_referees VALUES (44, 1, 7, 'main', '2024-01-25 09:20:00+07');
+INSERT INTO public.match_referees VALUES (44, 2, 7, 'assistant_1', '2024-01-25 09:20:00+07');
+INSERT INTO public.match_referees VALUES (45, 4, 7, 'main', '2024-01-25 12:20:00+07');
+INSERT INTO public.match_referees VALUES (45, 3, 7, 'assistant_1', '2024-01-25 12:20:00+07');
+INSERT INTO public.match_referees VALUES (46, 1, 7, 'main', '2024-01-26 09:20:00+07');
+INSERT INTO public.match_referees VALUES (46, 4, 7, 'assistant_1', '2024-01-26 09:20:00+07');
+INSERT INTO public.match_referees VALUES (47, 2, 7, 'main', '2024-01-26 12:20:00+07');
+INSERT INTO public.match_referees VALUES (47, 3, 7, 'assistant_1', '2024-01-26 12:20:00+07');
 
 
 --
@@ -1081,6 +1230,13 @@ SELECT pg_catalog.setval('public.matches_id_seq', 47, true);
 --
 
 SELECT pg_catalog.setval('public.players_id_seq', 23, true);
+
+
+--
+-- Name: referees_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.referees_id_seq', 4, true);
 
 
 --

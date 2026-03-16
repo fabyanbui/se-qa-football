@@ -1,4 +1,5 @@
 const dbMatches = require('../utils/database/dbMatches');
+const RefereeModel = require('./referee.m');
 
 function convertDate(mDate) {
   if (mDate) {
@@ -24,6 +25,23 @@ function convertTime(mTime) {
   return mTime;
 }
 
+async function attachRefereesToMatches(matches) {
+  const matchIds = matches
+    .map((match) => Number.parseInt(match.id, 10))
+    .filter((matchId) => Number.isInteger(matchId));
+  if (matchIds.length === 0) {
+    return;
+  }
+
+  const refereesByMatch = await RefereeModel.getMatchRefereesByMatchIds(matchIds);
+  matches.forEach((match) => {
+    const parsedMatchId = Number.parseInt(match.id, 10);
+    match.referees = Number.isInteger(parsedMatchId)
+      ? (refereesByMatch.get(parsedMatchId) || [])
+      : [];
+  });
+}
+
 module.exports = class Match {
 
   constructor(match) {
@@ -43,18 +61,20 @@ module.exports = class Match {
     this.isPlayed = match.is_played;
     this.isFinished = match.is_finished;
     this.events = match.events;
+    this.referees = match.referees || [];
 
   }
 
   static async getRoundsInTournament(tournamentId) {
     const matches = await dbMatches.getMatchesInTournament(tournamentId);
+    const matchObjs = matches.map(match => new Match(match));
+    await attachRefereesToMatches(matchObjs);
     const nOfRounds = await dbMatches.countRoundsInTournament(tournamentId);
     const rounds = [];
     for (let i = 0; i < nOfRounds; i++) {
       rounds.push([]);
     }
-    matches.forEach(match => {
-      const matchObj = new Match(match);
+    matchObjs.forEach(matchObj => {
       rounds[matchObj.round - 1].push(matchObj);
     });
     return rounds;
@@ -62,7 +82,9 @@ module.exports = class Match {
 
   static async getMatchesInTournament(tournamentId) {
     const matches = await dbMatches.getMatchesInTournament(tournamentId);
-    return matches.map(match => new Match(match));
+    const matchObjs = matches.map(match => new Match(match));
+    await attachRefereesToMatches(matchObjs);
+    return matchObjs;
   }
 
   static async getMatch(id) {
@@ -84,6 +106,7 @@ module.exports = class Match {
   static async buildMatchWithEvents(match) {
     let matchObj = new Match(match);
     matchObj.events = await dbMatches.getMatchEvents(matchObj.id);
+    matchObj.referees = await RefereeModel.getMatchReferees(matchObj.id);
     // each event is an object with properties: name, team_id, type, time
     matchObj.yellowCards1 = matchObj.events.filter(event => event.type === 'yellow_card' && event.team_id === matchObj.teamId1);
     matchObj.yellowCards2 = matchObj.events.filter(event => event.type === 'yellow_card' && event.team_id === matchObj.teamId2);

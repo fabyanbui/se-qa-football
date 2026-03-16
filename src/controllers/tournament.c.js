@@ -2,6 +2,7 @@ const TournamentModel = require('../models/tournament.m');
 const TeamModel = require('../models/team.m');
 const MatchModel = require('../models/match.m');
 const PlayerModel = require('../models/player.m');
+const RefereeModel = require('../models/referee.m');
 
 function getUser(req) {
   return req.isAuthenticated() ? req.user : null;
@@ -21,6 +22,33 @@ function normalizeRound(rawRound, totalRounds) {
 function formatMatchDate(match) {
   const date = new Date(match.date);
   match.date = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+}
+
+function normalizeRefereeAssignments(rawAssignments) {
+  if (!Array.isArray(rawAssignments)) {
+    return null;
+  }
+
+  const seenRoles = new Set();
+  const seenReferees = new Set();
+  return rawAssignments.map((assignment) => {
+    const refereeId = Number.parseInt(assignment?.refereeId ?? assignment?.referee_id, 10);
+    const role = RefereeModel.normalizeMatchRefereeRole(assignment?.role);
+
+    if (!Number.isInteger(refereeId) || !RefereeModel.isValidMatchRefereeRole(role)) {
+      throw new Error('Phân công trọng tài không hợp lệ');
+    }
+    if (seenRoles.has(role)) {
+      throw new Error('Vai trò trọng tài trong trận đấu không được trùng');
+    }
+    seenRoles.add(role);
+    if (seenReferees.has(refereeId)) {
+      throw new Error('Một trọng tài không thể được gán nhiều vai trò trong cùng trận đấu');
+    }
+    seenReferees.add(refereeId);
+
+    return { refereeId, role };
+  });
 }
 
 function canConfigureTournament(user, tournament) {
@@ -314,6 +342,20 @@ module.exports = {
     const round = normalizeRound(req.query.round, rounds.length);
     const matches = rounds[round - 1] || [];
     const teams = await TeamModel.getAllActiveTeams(tournament.id);
+    const referees = await RefereeModel.getRefereesInTournament(tournament.id);
+    matches.forEach((match) => {
+      const refereeRoleMap = {
+        main: '',
+        assistant_1: '',
+        assistant_2: '',
+      };
+      match.referees.forEach((assignment) => {
+        if (Object.prototype.hasOwnProperty.call(refereeRoleMap, assignment.role)) {
+          refereeRoleMap[assignment.role] = assignment.id;
+        }
+      });
+      match.refereeRoleMap = refereeRoleMap;
+    });
 
     res.render('tournament/modifications-matches', {
       title: "Chỉnh sửa",
@@ -325,6 +367,7 @@ module.exports = {
       rounds: rounds,
       matches: matches,
       teams: teams,
+      referees: referees,
       subNavigation: 4,
       subSubNavigation: 2,
     });
@@ -567,6 +610,11 @@ module.exports = {
           throw new Error('Có trận đấu không thuộc giải đấu hiện tại');
         }
         await MatchModel.shortUpdateMatch(match.id, match);
+
+        const refereeAssignments = normalizeRefereeAssignments(match.referees);
+        if (refereeAssignments !== null) {
+          await RefereeModel.replaceMatchReferees(match.id, tournament.id, refereeAssignments);
+        }
       }
       return res.json({ status: 'success' });
     } catch (error) {
