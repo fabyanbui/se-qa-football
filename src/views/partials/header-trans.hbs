@@ -18,9 +18,19 @@
         <li class="nav-item">
           <a class="nav-link text-white" href="/tournament">Giải đấu</a>
         </li>
+        {{#if user}}
+        <li class="nav-item">
+          <a class="nav-link text-white" href="/tournament/my">Giải của tôi</a>
+        </li>
+        {{/if}}
         <li class="nav-item">
           <a class="nav-link text-white" href="/teams">Đội bóng</a>
         </li>
+        {{#if user}}
+        <li class="nav-item">
+          <a class="nav-link text-white" href="/teams/my">Đội của tôi</a>
+        </li>
+        {{/if}}
         <li class="nav-item">
           <a class="nav-link text-white" href="/about">Giới thiệu</a>
         </li>

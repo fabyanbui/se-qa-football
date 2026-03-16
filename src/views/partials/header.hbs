@@ -18,9 +18,19 @@
         <li class="nav-item">
           <a class="nav-link text-black" href="/tournament">Giải đấu</a>
         </li>
+        {{#if user.canManageTournament}}
+        <li class="nav-item">
+          <a class="nav-link text-black" href="/tournament/my">Giải của tôi</a>
+        </li>
+        {{/if}}
         <li class="nav-item">
           <a class="nav-link text-black" href="/teams">Đội bóng</a>
         </li>
+        {{#if user.canManageTeam}}
+        <li class="nav-item">
+          <a class="nav-link text-black" href="/teams/my">Đội của tôi</a>
+        </li>
+        {{/if}}
         <li class="nav-item">
           <a class="nav-link text-black" href="/about">Giới thiệu</a>
         </li>
@@ -29,7 +39,11 @@
         {{#if user}}
         <li class="nav-item mx-auto ">
           <div class="d-flex align-items-center">
+            {{#if user.canManageTeam}}
             <a href="/management">
+            {{else}}
+            <a href="/profile">
+            {{/if}}
               <img src="/img/avatars/{{user.avatar}}" alt="" height="40" width="40"
                 class="rounded-circle object-fit-cover">
             </a>
@@ -42,10 +56,12 @@
                   <i class="fas fa-user me-1"></i>
                   <span>Thông tin cá nhân</span>
                 </a>
+                {{#if user.canManageTeam}}
                 <a class="dropdown-item" href="/management">
                   <i class="fas fa-futbol me-1"></i>
                   <span>Trang quản lý</span>
                 </a>
+                {{/if}}
 
                 <div class="dropdown-divider my-1 p-0"></div>
 

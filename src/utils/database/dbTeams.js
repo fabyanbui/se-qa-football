@@ -2,7 +2,35 @@ require('dotenv').config();
 const db = require('./db-config');
 const TournamentModel = require('../../models/tournament.m');
 
+async function resolveTournamentId(tournamentId) {
+  if (tournamentId) {
+    return tournamentId;
+  }
+  return await TournamentModel.getCurrentTournamentId();
+}
+
 module.exports = {
+
+  ensureNullableTournamentId: async () => {
+    const schemaInfo = await db.pool.query(`
+      SELECT is_nullable
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'teams'
+        AND column_name = 'tournament_id';
+    `);
+    if (schemaInfo.rowCount === 0) {
+      return false;
+    }
+    if (schemaInfo.rows[0].is_nullable === 'YES') {
+      return false;
+    }
+    await db.pool.query(`
+      ALTER TABLE teams
+      ALTER COLUMN tournament_id DROP NOT NULL;
+    `);
+    return true;
+  },
 
   countAllTeams: async () => {
     const query = `
@@ -21,38 +49,43 @@ module.exports = {
   },
 
   createTeam: async (team) => {
-    const currentTournamentId = await TournamentModel.getCurrentTournamentId();
     const query = `
       INSERT INTO teams (name, contact_name, contact_email, contact_phone, level, introduction, has_uniform, profile, tournament_id, owner_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING id;
     `;
-    const res = await db.pool.query(query, [team.name, team.contactName, team.contactEmail, team.contactPhone, team.level, team.introduction, false, team.profile, currentTournamentId, team.ownerId]);
+    const res = await db.pool.query(query, [team.name, team.contactName, team.contactEmail, team.contactPhone, team.level, team.introduction, false, team.profile, null, team.ownerId]);
     return res.rows[0].id;
   },
 
   getAllTeams: async () => {
     const query = `
-      SELECT * FROM teams;
+      SELECT * FROM teams ORDER BY id ASC;
     `;
     const res = await db.pool.query(query);
     return res.rows;
   },
 
-  getAllCurrentTeams: async () => {
-    const currentTournamentId = await TournamentModel.getCurrentTournamentId();
+  getAllCurrentTeams: async (tournamentId) => {
+    const scopedTournamentId = await resolveTournamentId(tournamentId);
+    if (!scopedTournamentId) {
+      return [];
+    }
     const query = `
       SELECT * FROM teams WHERE tournament_id = $1 ORDER BY id ASC;
     `;
-    const res = await db.pool.query(query, [currentTournamentId]);
+    const res = await db.pool.query(query, [scopedTournamentId]);
     return res.rows;
   },
 
-  getAllActiveTeams: async () => {
-    const currentTournamentId = await TournamentModel.getCurrentTournamentId();
+  getAllActiveTeams: async (tournamentId) => {
+    const scopedTournamentId = await resolveTournamentId(tournamentId);
+    if (!scopedTournamentId) {
+      return [];
+    }
     const query = `
       SELECT * FROM teams WHERE tournament_id = $1 AND status = true ORDER BY id ASC;
     `;
-    const res = await db.pool.query(query, [currentTournamentId]);
+    const res = await db.pool.query(query, [scopedTournamentId]);
     return res.rows;
   },
 
@@ -88,6 +121,29 @@ module.exports = {
     return res.rows;
   },
 
+  enrollTeamToTournament: async (id, tournamentId) => {
+    const parsedTournamentId = Number.parseInt(tournamentId, 10);
+    if (!Number.isInteger(parsedTournamentId)) {
+      return 0;
+    }
+    const query = `
+      UPDATE teams
+      SET tournament_id = $1, status = false
+      WHERE id = $2 AND tournament_id IS NULL
+      RETURNING id;
+    `;
+    const res = await db.pool.query(query, [parsedTournamentId, id]);
+    return res.rowCount;
+  },
+
+  enrollTeamToCurrentTournament: async (id) => {
+    const currentTournamentId = await TournamentModel.getCurrentTournamentId();
+    if (!currentTournamentId) {
+      return 0;
+    }
+    return module.exports.enrollTeamToTournament(id, currentTournamentId);
+  },
+
   updateTeam: async (id, team) => {
     console.log(team);
     const query = `
@@ -105,31 +161,48 @@ module.exports = {
     return res.rowCount;
   },
 
-  updateTeamStatus: async (id, status) => {
+  updateTeamStatus: async (id, status, tournamentId) => {
+    const scopedTournamentId = await resolveTournamentId(tournamentId);
+    if (!scopedTournamentId) {
+      return 0;
+    }
+
     if (status) {
-      const currentTournament = await TournamentModel.getCurrentTournament();
-      // count (status = true) teams in current tournament
+      const scopedTournament = await TournamentModel.getTournamentById(scopedTournamentId);
+      if (!scopedTournament) {
+        return 0;
+      }
+
+      // count (status = true) teams in scoped tournament
       const query = `
         SELECT COUNT(*) FROM teams WHERE tournament_id = $1 AND status = true;
       `;
-      const res = await db.pool.query(query, [currentTournament.id]);
-      const count = res.rows[0].count;
-      if (count >= currentTournament.maxTeams) {
+      const res = await db.pool.query(query, [scopedTournament.id]);
+      const count = Number(res.rows[0].count);
+      if (count >= Number(scopedTournament.maxTeams)) {
         return 0;
       }
     }
     const query = `
-      UPDATE teams SET status = $1 WHERE id = $2;
+      UPDATE teams SET status = $1 WHERE id = $2 AND tournament_id = $3;
     `;
-    const res = await db.pool.query(query, [status, id]);
+    const res = await db.pool.query(query, [status, id, scopedTournamentId]);
     return res.rowCount;
   },
 
-  getTeamsStatistics: async () => {
+  getTeamsStatistics: async (tournamentId) => {
+    const scopedTournamentId = await resolveTournamentId(tournamentId);
+    if (!scopedTournamentId) {
+      return [];
+    }
     const query = `
-      SELECT * FROM teams_statistics ORDER BY score ASC, team_id ASC;
+      SELECT teams_statistics.*
+      FROM teams_statistics
+      JOIN teams ON teams.id = teams_statistics.team_id
+      WHERE teams.tournament_id = $1
+      ORDER BY teams_statistics.score ASC, teams_statistics.team_id ASC;
     `;
-    const res = await db.pool.query(query);
+    const res = await db.pool.query(query, [scopedTournamentId]);
     return res.rows;
   },
 

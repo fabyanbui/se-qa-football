@@ -11,7 +11,7 @@ A **Node.js/Express** web app for managing football tournaments. Features includ
 - Team registration and approval
 - Match scheduling and live scoring
 - Player management
-- User authentication (admin vs. regular user)
+- Role-based authentication (admin, tournament organizer, team manager)
 
 **Stack:** Node.js · Express · PostgreSQL · Handlebars (HBS) · Passport.js · bcrypt
 
@@ -35,7 +35,11 @@ brew services start postgresql@14
 sudo -u postgres psql -p 5433 -c "ALTER USER postgres WITH PASSWORD '1';"
 
 # 3. Init database (first time only)
-PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f resources/initialize.sql
+set -a && source .env && set +a
+PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" \
+  -v admin_seed_email="$ADMIN_SEED_EMAIL" \
+  -v admin_seed_password="$ADMIN_SEED_PASSWORD" \
+  -f resources/initialize.sql
 
 # 4. Install dependencies
 npm install
@@ -58,6 +62,8 @@ DB_PASSWORD="1"
 DB_NAME="DB_FootballTournament"
 DB_PORT=5433
 SALT_ROUNDS=10
+ADMIN_SEED_EMAIL="admin@football.local"
+ADMIN_SEED_PASSWORD="CHANGE_ME_ADMIN_PASSWORD"
 ```
 
 ### Database Management
@@ -66,9 +72,9 @@ SALT_ROUNDS=10
 |--------------|---------|
 | Start DB     | `brew services start postgresql@14` or `sudo -S service postgresql start && pg_lsclusters` |
 | Set password (first time) | `sudo -u postgres psql -p 5433 -c "ALTER USER postgres WITH PASSWORD '1';"` |
-| Init DB      | `PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f resources/initialize.sql` |
-| Reset DB     | `PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";" && PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f resources/initialize.sql` |
-| Connect DB   | `PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -d DB_FootballTournament` |
+| Init DB      | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -v admin_seed_email="$ADMIN_SEED_EMAIL" -v admin_seed_password="$ADMIN_SEED_PASSWORD" -f resources/initialize.sql` |
+| Reset DB     | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -c "DROP DATABASE IF EXISTS \"DB_FootballTournament\";" && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -v admin_seed_email="$ADMIN_SEED_EMAIL" -v admin_seed_password="$ADMIN_SEED_PASSWORD" -f resources/initialize.sql` |
+| Connect DB   | `set -a && source .env && set +a && PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -d "$DB_NAME"` |
 | Dump all tables | See below |
 
 Dump all tables dynamically:
@@ -82,11 +88,21 @@ ORDER BY table_name
 EOF
 ```
 
+Terminate all connections to the database (useful before dropping):
+```bash
+PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -d postgres -c "
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = 'DB_FootballTournament'
+AND pid <> pg_backend_pid();
+"
+```
+
 ### Test Accounts
 
 | Role  | Email             | Password |
 |-------|-------------------|----------|
-| Admin | admin@admin.com   | `123`    |
+| Admin | from `ADMIN_SEED_EMAIL` | from `ADMIN_SEED_PASSWORD` |
 | User  | user@user.com     | `123`    |
 
 ---
@@ -122,7 +138,8 @@ src/
 │   ├── tournament.m.js
 │   ├── team.m.js
 │   ├── match.m.js
-│   └── player.m.js
+│   ├── player.m.js
+│   └── referee.m.js
 ├── utils/
 │   ├── database/
 │   │   ├── db-config.js    # PostgreSQL pool (reads from .env)
@@ -141,22 +158,28 @@ src/
 
 ## Database Schema
 
-8 tables in PostgreSQL database `DB_FootballTournament`:
+11 tables in PostgreSQL database `DB_FootballTournament`:
 
 | Table              | Description |
 |--------------------|-------------|
-| `users`            | Accounts — `privilege`: 0=user, 1=admin |
+| `roles`            | Role catalog (`admin`, `tournament_organizer`, `team_manager`) |
+| `users`            | Accounts linked to `roles` (`role_id`) with backward-compatible `privilege` |
 | `tournaments`      | Tournament info, format, dates, location |
 | `formats`          | Tournament formats (round-robin, knockout, group stage) |
 | `teams`            | Teams per tournament — `status`: approved or not |
 | `teams_statistics` | Auto-updated stats (wins, draws, losses, goals, cards) |
 | `players`          | Players belonging to teams |
 | `matches`          | Scheduled matches with scores and status flags |
+| `referees`         | Tournament-scoped referee roster |
+| `match_referees`   | Match referee assignments with role (`main`, `assistant_*`, `var`) |
 | `match_events`     | In-match events: `goal`, `own_goal`, `red_card`, `yellow_card`, `start`, `end` |
 
 Key relationships:
 - `teams.tournament_id` → `tournaments.id`
 - `matches.team_id_1/2` → `teams.id`
+- `referees.tournament_id` → `tournaments.id`
+- `match_referees.match_id` → `matches.id`
+- `match_referees.referee_id` → `referees.id`
 - `match_events.match_id` → `matches.id`
 - `match_events.player_id` → `players.id`
 - `teams_statistics.team_id` → `teams.id` (auto-managed by DB triggers)

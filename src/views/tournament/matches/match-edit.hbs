@@ -6,19 +6,19 @@
       {{#ifEquals subSubNavigation 0}}
       <a class="h6 fw-bold active">Thông số</a>
       {{else}}
-      <a href="/tournament/matches/{{match.id}}/edit" class="h6 fw-bold text-decoration-none">Thông số</a>
+      <a href="{{tournamentBasePath}}/matches/{{match.id}}/edit" class="h6 fw-bold text-decoration-none">Thông số</a>
       {{/ifEquals}}
 
       {{#ifEquals subSubNavigation 1}}
       <a class="h6 fw-bold ms-3 active">Đội hình</a>
       {{else}}
-      <a href="/tournament/matches/{{match.id}}/edit/players" class="h6 fw-bold ms-3 text-decoration-none">Đội hình</a>
+      <a href="{{tournamentBasePath}}/matches/{{match.id}}/edit/players" class="h6 fw-bold ms-3 text-decoration-none">Đội hình</a>
       {{/ifEquals}}
 
       {{#ifEquals subSubNavigation 2}}
       <a class="h6 fw-bold ms-3 active">Bán vé</a>
       {{else}}
-      <a href="/tournament/matches/{{match.id}}/edit/tickets" class="h6 fw-bold ms-3 text-decoration-none">Bán vé</a>
+      <a href="{{tournamentBasePath}}/matches/{{match.id}}/edit/tickets" class="h6 fw-bold ms-3 text-decoration-none">Bán vé</a>
       {{/ifEquals}}
     </div>
 
@@ -372,7 +372,7 @@
       return;
     }
 
-    fetch(`/tournament/matches/{{match.id}}/edit/goals`, {
+    fetch(`{{tournamentBasePath}}/matches/{{match.id}}/edit/goals`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -443,7 +443,7 @@
       return;
     }
 
-    fetch(`/tournament/matches/{{match.id}}/edit/cards`, {
+    fetch(`{{tournamentBasePath}}/matches/{{match.id}}/edit/cards`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

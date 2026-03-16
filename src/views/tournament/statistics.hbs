@@ -6,19 +6,19 @@
       {{#ifEquals subSubNavigation 0}}
       <a href="#" class="h6 fw-bold active">Đội bóng</a>
       {{else}}
-      <a href="/tournament/statistics" class="h6 fw-bold text-decoration-none">Đội bóng</a>
+      <a href="{{tournamentBasePath}}/statistics" class="h6 fw-bold text-decoration-none">Đội bóng</a>
       {{/ifEquals}}
 
       {{#ifEquals subSubNavigation 1}}
       <a href="#" class="h6 fw-bold ms-3 active">Cầu thủ</a>
       {{else}}
-      <a href="/tournament/statistics/players" class="h6 fw-bold ms-3 text-decoration-none">Cầu thủ</a>
+      <a href="{{tournamentBasePath}}/statistics/players" class="h6 fw-bold ms-3 text-decoration-none">Cầu thủ</a>
       {{/ifEquals}}
     </div>
 
     <div class="d-flex justify-content-between align-items-end mb-1">
       <p class="m-0 text-muted text-end">T-H-B: Thắng-Hoà-Bại</p>
-      <a href="/tournament/statistics/download">
+      <a href="{{tournamentBasePath}}/statistics/download">
         <button class="btn btn-success">
           <i class="fas fa-download"></i>
           <span class="ms-2">Tải xuống</span>

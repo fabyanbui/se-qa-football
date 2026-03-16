@@ -6,18 +6,18 @@
       {{#ifEquals subSubNavigation 0}}
       <a href="#" class="h6 fw-bold active">Danh sách</a>
       {{else}}
-      <a href="/tournament/teams" class="h6 fw-bold text-decoration-none">Danh sách</a>
+      <a href="{{tournamentBasePath}}/teams" class="h6 fw-bold text-decoration-none">Danh sách</a>
       {{/ifEquals}}
 
       {{#ifEquals subSubNavigation 1}}
       <a href="#" class="h6 fw-bold ms-3 active">Bảng xếp hạng</a>
       {{else}}
-      <a href="/tournament/teams/leaderboard" class="h6 fw-bold ms-3 text-decoration-none">Bảng xếp hạng</a>
+      <a href="{{tournamentBasePath}}/teams/leaderboard" class="h6 fw-bold ms-3 text-decoration-none">Bảng xếp hạng</a>
       {{/ifEquals}}
     </div>
 
     <div class="d-flex justify-content-between align-items-end mb-1">
-      <a href="/tournament/rules">
+      <a href="{{tournamentBasePath}}/rules">
         <p class="m-0">Quy tắc xếp hạng</p>
       </a>
       <p class="m-0 text-muted text-end">T-H-B: Thắng-Hoà-Bại</p>

@@ -6,24 +6,24 @@
       {{#ifEquals subSubNavigation 0}}
       <a class="h6 fw-bold active">Cấu hình</a>
       {{else}}
-      <a href="/tournament/modifications" class="h6 fw-bold text-decoration-none">Cấu hình</a>
+      <a href="{{tournamentBasePath}}/modifications" class="h6 fw-bold text-decoration-none">Cấu hình</a>
       {{/ifEquals}}
 
       {{#ifEquals subSubNavigation 1}}
       <a class="h6 fw-bold ms-3 active">Đội bóng</a>
       {{else}}
-      <a href="/tournament/modifications/teams" class="h6 fw-bold ms-3 text-decoration-none">Đội bóng</a>
+      <a href="{{tournamentBasePath}}/modifications/teams" class="h6 fw-bold ms-3 text-decoration-none">Đội bóng</a>
       {{/ifEquals}}
 
       {{#ifEquals subSubNavigation 2}}
       <a class="h6 fw-bold ms-3 active">Lịch đấu</a>
       {{else}}
-      <a href="/tournament/modifications/matches" class="h6 fw-bold ms-3 text-decoration-none">Lịch đấu</a>
+      <a href="{{tournamentBasePath}}/modifications/matches" class="h6 fw-bold ms-3 text-decoration-none">Lịch đấu</a>
       {{/ifEquals}}
 
     </div>
 
-    <form action="/tournament/modifications" method="POST" id="tournament-form">
+    <form action="{{tournamentBasePath}}/modifications" method="POST" id="tournament-form">
 
       <div class="mt-2 position-relative text-center py-2">
         <img src="/img/tournaments/{{tournament.id}}/banner.png" alt="" height="300px"
@@ -265,7 +265,7 @@
     const dataBanner = new FormData();
     dataBanner.append('banner', banner.files[0]);
 
-    fetch('/tournament/modifications/info', {
+    fetch('{{tournamentBasePath}}/modifications/info', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -275,21 +275,21 @@
       .then(response => response.json())
       .then(data => {
         if (data.status == 'success') {
-          fetch('/tournament/modifications/logo', {
+          fetch('{{tournamentBasePath}}/modifications/logo', {
             method: 'POST',
             body: dataLogo,
           })
             .then(response => response.json())
             .then(data => {
               if (data.status == 'success') {
-                fetch('/tournament/modifications/banner', {
+                fetch('{{tournamentBasePath}}/modifications/banner', {
                   method: 'POST',
                   body: dataBanner,
                 })
                   .then(response => response.json())
                   .then(data => {
                     if (data.status == 'success') {
-                      window.location.href = '/tournament/modifications';
+                      window.location.href = '{{tournamentBasePath}}/modifications';
                     } else {
                       throw new Error(data.message);
                     }

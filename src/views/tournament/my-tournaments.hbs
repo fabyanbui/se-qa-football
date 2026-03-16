@@ -1,0 +1,49 @@
+<div class="row m-0 px-5 py-4">
+  <div class="px-5">
+    <p class="h1 lh-5 text-center text-primary-color mb-1">Giải đấu của tôi</p>
+    {{#if user.isAdmin}}
+    <p class="text-center mb-2 text-muted">Bạn là admin, đang hiển thị tất cả giải đấu đang hoạt động.</p>
+    {{else}}
+    <p class="text-center mb-2 text-muted">Hiển thị các giải đấu bạn đang sở hữu.</p>
+    {{/if}}
+    <div class="d-flex justify-content-end mb-3">
+      <a href="/tournament" class="btn btn-outline-secondary me-2">Tất cả giải đấu</a>
+      <a href="/create" class="btn btn-primary">Tạo giải đấu</a>
+    </div>
+
+    {{#if tournaments.length}}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col" class="text-start">Tên giải</th>
+            <th scope="col">Bắt đầu</th>
+            <th scope="col">Kết thúc</th>
+            <th scope="col" class="text-start">Địa điểm</th>
+            <th scope="col">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each tournaments}}
+          <tr>
+            <th scope="row">{{sum @index 1}}</th>
+            <td class="text-start">
+              <a href="/tournament/{{this.id}}" class="text-decoration-none">{{this.name}}</a>
+            </td>
+            <td>{{this.timeStart}}</td>
+            <td>{{this.timeEnd}}</td>
+            <td class="text-start">{{this.place}}</td>
+            <td>
+              <a href="/tournament/{{this.id}}/modifications" class="btn btn-outline-primary btn-sm">Cấu hình</a>
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+    {{else}}
+    <p class="h5 text-muted text-center my-5">Không có giải đấu phù hợp để cấu hình.</p>
+    {{/if}}
+  </div>
+</div>

@@ -16,11 +16,29 @@ require('./middlewares/node-schedule.mw')();
 
 require('./routers/index.r')(app);
 
-
+const dbUsers = require('./utils/database/dbUsers');
+const dbTeams = require('./utils/database/dbTeams');
+const dbTournaments = require('./utils/database/dbTournaments');
 
 const http = require('http');
 const httpServer = http.createServer(app);
 const port = process.env.PORT || 3000;
-httpServer.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+
+async function bootstrapAndStart() {
+  await dbUsers.ensureRegistrationRoleDefault();
+  await dbTeams.ensureNullableTournamentId();
+  await dbUsers.ensureSeedAdmin(
+    process.env.ADMIN_SEED_EMAIL,
+    process.env.ADMIN_SEED_PASSWORD
+  );
+  await dbUsers.ensureUserRolesBackfill();
+  await dbTournaments.ensureOrganizerIdBackfill();
+  httpServer.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+  });
+}
+
+bootstrapAndStart().catch((err) => {
+  console.error('Server bootstrap failed:', err.message);
+  process.exit(1);
 });

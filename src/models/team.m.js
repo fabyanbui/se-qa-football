@@ -1,6 +1,17 @@
 const dbTeams = require('../utils/database/dbTeams');
 
-module.exports = class TeamModel {
+async function buildTeamsWithPlayerCounts(teams) {
+  const mappedTeams = [];
+  for (const team of teams) {
+    const teamObj = new TeamModel(team);
+    teamObj.players = {};
+    teamObj.players.length = await dbTeams.countPlayers(team.id);
+    mappedTeams.push(teamObj);
+  }
+  return mappedTeams;
+}
+
+class TeamModel {
 
   constructor(team) {
     this.id = team.id;
@@ -30,28 +41,19 @@ module.exports = class TeamModel {
     return await dbTeams.createTeam(team);
   }
 
-  static async getAllCurrentTeams() {
-    const res = await dbTeams.getAllCurrentTeams();
-    let array = [];
-    for (const team of res) {
-      let teamObj = new TeamModel(team);
-      teamObj.players = {};
-      teamObj.players.length = await dbTeams.countPlayers(team.id);
-      array.push(teamObj);
-    }
-    return array;
+  static async getAllTeams() {
+    const res = await dbTeams.getAllTeams();
+    return await buildTeamsWithPlayerCounts(res);
   }
 
-  static async getAllActiveTeams() {
-    const res = await dbTeams.getAllActiveTeams();
-    let array = [];
-    for (const team of res) {
-      let teamObj = new TeamModel(team);
-      teamObj.players = {};
-      teamObj.players.length = await dbTeams.countPlayers(team.id);
-      array.push(teamObj);
-    }
-    return array;
+  static async getAllCurrentTeams(tournamentId) {
+    const res = await dbTeams.getAllCurrentTeams(tournamentId);
+    return await buildTeamsWithPlayerCounts(res);
+  }
+
+  static async getAllActiveTeams(tournamentId) {
+    const res = await dbTeams.getAllActiveTeams(tournamentId);
+    return await buildTeamsWithPlayerCounts(res);
   }
 
   static async getTeam(id) {
@@ -82,17 +84,25 @@ module.exports = class TeamModel {
     return await dbTeams.removePlayer(teamId, playerId);
   }
 
-  static async updateTeamStatus(id, status) {
-    return await dbTeams.updateTeamStatus(id, status);
+  static async updateTeamStatus(id, status, tournamentId) {
+    return await dbTeams.updateTeamStatus(id, status, tournamentId);
   }
 
-  static async getTeamsStatistics() {
-    return await dbTeams.getTeamsStatistics();
+  static async enrollTeamToCurrentTournament(id) {
+    return await dbTeams.enrollTeamToCurrentTournament(id);
   }
 
-  static async getTeamsLeaderboard() {
-    const teams = await TeamModel.getAllActiveTeams();
-    const teamStatistics = await TeamModel.getTeamsStatistics();
+  static async enrollTeamToTournament(id, tournamentId) {
+    return await dbTeams.enrollTeamToTournament(id, tournamentId);
+  }
+
+  static async getTeamsStatistics(tournamentId) {
+    return await dbTeams.getTeamsStatistics(tournamentId);
+  }
+
+  static async getTeamsLeaderboard(tournamentId) {
+    const teams = await TeamModel.getAllActiveTeams(tournamentId);
+    const teamStatistics = await TeamModel.getTeamsStatistics(tournamentId);
     teams.forEach(team => {
       const statistics = teamStatistics.find(stat => stat.team_id === team.id);
       if (statistics) {
@@ -129,4 +139,4 @@ module.exports = class TeamModel {
 
 }
 
-
+module.exports = TeamModel;

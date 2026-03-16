@@ -1,0 +1,611 @@
+{
+  "metadata": {
+    "generated_at_utc": "2026-03-15T17:55:21.201924+00:00",
+    "author_scope": [
+      "Bui Dinh Bao",
+      "Bùi Đình Bảo",
+      "21120201@student.hcmus.edu.vn",
+      "112999623+fabyanbui@users.noreply.github.com"
+    ],
+    "total_scoped_commits": 29,
+    "total_bug_entries": 7,
+    "fixed_bug_entries": 6,
+    "being_fixed_bug_entries": 1,
+    "commit_classification_counts": {
+      "feature-or-refactor": 9,
+      "merge": 3,
+      "bug-fix": 8,
+      "bug-investigation": 2,
+      "documentation": 7
+    },
+    "bug_linked_commits": 10,
+    "copilot_history_sources": [
+      "src/docs/session-work-summary.md",
+      "src/qa/smoke/20260313_151500.md",
+      "src/qa/smoke/20260313_154500.md",
+      "src/qa/smoke-fix/20260313_151500.md"
+    ]
+  },
+  "status_legend": {
+    "fixed": "Bug has concrete fix evidence in scoped commits and/or explicit closure notes.",
+    "being_fixed": "Bug has ongoing evidence but no final closure artifact in scoped sources."
+  },
+  "bugs": [
+    {
+      "id": "FAB-BUG-001",
+      "title": "Tournament overview crash from invalid SQL aggregate subqueries",
+      "status": "fixed",
+      "severity": "critical",
+      "evidence_commits": [
+        "4e03fc69f1ef24fcf51b569531df91bccc687b7b"
+      ],
+      "copilot_history_evidence": [
+        {
+          "path": "qa/smoke/20260313_151500.md",
+          "lines": [
+            12,
+            15,
+            16
+          ]
+        },
+        {
+          "path": "qa/smoke-fix/20260313_151500.md",
+          "lines": [
+            1,
+            5,
+            6,
+            9
+          ]
+        }
+      ],
+      "affected_paths": [
+        "src/utils/database/dbMatches.js",
+        "src/controllers/tournament.c.js"
+      ],
+      "root_cause": "Aggregate queries in getNumberOfOwnGoalsInTournament/getNumberOfCardsInTournament used FROM subqueries without aliases, causing PostgreSQL syntax error 42601 and crashing /tournament rendering.",
+      "fix_summary": "Replaced invalid subquery pattern with direct JOIN + COALESCE SUM queries and normalized numeric return values.",
+      "verification_notes": [
+        "Current query implementation is JOIN-based in src/utils/database/dbMatches.js:51-73.",
+        "Smoke-fix artifact records successful validation without PostgreSQL syntax errors."
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "FAB-BUG-002",
+      "title": "Team listing visibility and pagination boundary defects",
+      "status": "fixed",
+      "severity": "high",
+      "evidence_commits": [
+        "8cb8e9f979dc29420b79054cfeb4b99c39b4e513"
+      ],
+      "copilot_history_evidence": [],
+      "affected_paths": [
+        "src/controllers/teams.c.js",
+        "src/models/team.m.js"
+      ],
+      "root_cause": "Team list logic used a narrower source and fragile page parsing, leading to visibility mismatch and unstable pagination behavior around invalid/out-of-range page values.",
+      "fix_summary": "Switched listing flow to full team source, normalized page parsing with Number.parseInt, and added explicit page-range guard via maxPage.",
+      "verification_notes": [
+        "Current controller uses TeamModel.getAllTeams() and guarded pagination in src/controllers/teams.c.js:48-55.",
+        "TeamModel has reusable getAllTeams path in src/models/team.m.js:44-57."
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "FAB-BUG-003",
+      "title": "Database connection port mismatch across environment and setup docs",
+      "status": "fixed",
+      "severity": "medium",
+      "evidence_commits": [
+        "efd76e12191a1b60fa24d498d3598ee843b8e891"
+      ],
+      "copilot_history_evidence": [],
+      "affected_paths": [
+        "src/.env",
+        "src/SETUP.md",
+        "src/AGENTS.md"
+      ],
+      "root_cause": "Project configuration/documentation referenced a PostgreSQL port that did not match the intended local cluster setup, causing bootstrap/connectivity failures.",
+      "fix_summary": "Standardized DB port usage to 5433 and aligned setup commands to host/port/password explicit invocations.",
+      "verification_notes": [
+        "Current env file sets DB_PORT=5433 in src/.env:11.",
+        "Setup docs remain aligned with port 5433 workflow."
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "FAB-BUG-004",
+      "title": "Admin bootstrap seed fragility and initialization safety gaps",
+      "status": "fixed",
+      "severity": "high",
+      "evidence_commits": [
+        "78f21427df4131ccdfba4ef8b23143b830738f3f",
+        "13d9966b63a2bff5221d351dc2336a0a309ecf8b"
+      ],
+      "copilot_history_evidence": [],
+      "affected_paths": [
+        "src/resources/initialize.sql",
+        "src/server.js",
+        "src/utils/database/dbUsers.js",
+        "src/.env",
+        "src/SETUP.md",
+        "src/AGENTS.md"
+      ],
+      "root_cause": "Admin seeding depended on fragile assumptions and could fail silently/incorrectly when variables were missing or schema states varied, making bootstrap unreliable.",
+      "fix_summary": "Added strict SQL init behavior (ON_ERROR_STOP), explicit seed variable guard table, and startup bootstrap repair logic (ensureSeedAdmin + compatibility helpers).",
+      "verification_notes": [
+        "Init script enforces seed variable path via seed_admin_guard in src/resources/initialize.sql:1019-1046.",
+        "Server bootstrap now runs seed/compatibility guards before listen in src/server.js:27-36."
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "FAB-BUG-005",
+      "title": "Match schedule display and match-state synchronization defects",
+      "status": "fixed",
+      "severity": "medium",
+      "evidence_commits": [
+        "fa5f15d2b3dbe9bbc94889318e215fe4393073db"
+      ],
+      "copilot_history_evidence": [],
+      "affected_paths": [
+        "src/models/match.m.js",
+        "src/middlewares/node-schedule.mw.js",
+        "src/utils/database/dbMatches.js",
+        "src/views/tournament/matches.hbs",
+        "src/views/tournament/tournament.hbs"
+      ],
+      "root_cause": "Mismatch between template score keys and model fields, plus missing/weak match status progression logic, caused incorrect schedule rendering and stale played/finished states.",
+      "fix_summary": "Aligned score bindings to scores1/scores2, normalized time rendering, and introduced recurring schedule-based status updates for matches.",
+      "verification_notes": [
+        "Score bindings use scores1/scores2 in src/views/tournament/matches.hbs:49 and src/views/tournament/tournament.hbs:96.",
+        "Match model trims time in src/models/match.m.js:21-26.",
+        "Scheduler executes periodic update flow in src/middlewares/node-schedule.mw.js:8-16."
+      ],
+      "confidence": "medium"
+    },
+    {
+      "id": "FAB-BUG-006",
+      "title": "Role toggle and team-enrollment validation/feedback regressions in management flows",
+      "status": "fixed",
+      "severity": "medium",
+      "evidence_commits": [
+        "c19f52e7ff7f127f5e83472296c1f00fccbf0934",
+        "bf3446cea6eb7fad7efae114dbcc990c31f7d11f"
+      ],
+      "copilot_history_evidence": [
+        {
+          "path": "docs/session-work-summary.md",
+          "lines": [
+            31,
+            51,
+            68
+          ]
+        }
+      ],
+      "affected_paths": [
+        "src/controllers/management.c.js",
+        "src/controllers/teams.c.js",
+        "src/views/management/accounts.hbs",
+        "src/views/management/teams.hbs"
+      ],
+      "root_cause": "Management workflows had weak role-toggle input validation and less precise enrollment error/permission responses, causing fragile UX and role-management edge-case failures.",
+      "fix_summary": "Added boolean toggle validation, protected role mutation rules, richer response payloads, and stricter tournament-selection checks for enrollment flows.",
+      "verification_notes": [
+        "Role toggle validation and clearer errors present in src/controllers/management.c.js (putAccountRole block).",
+        "Enrollment flow now validates tournament selection and closed tournaments in src/controllers/teams.c.js:280-296."
+      ],
+      "confidence": "medium"
+    },
+    {
+      "id": "FAB-BUG-007",
+      "title": "Smoke rerun still indicates unresolved tournament-path error context",
+      "status": "being_fixed",
+      "severity": "medium",
+      "evidence_commits": [
+        "fa041cecfdfecaa83f25148cf267e181302c9954",
+        "c19f52e7ff7f127f5e83472296c1f00fccbf0934",
+        "3f80e1253b55938427af67596eae22636a4752b1"
+      ],
+      "copilot_history_evidence": [
+        {
+          "path": "qa/smoke/20260313_154500.md",
+          "lines": [
+            1,
+            5
+          ]
+        },
+        {
+          "path": "qa/smoke/20260313_151500.md",
+          "lines": [
+            5,
+            12
+          ]
+        }
+      ],
+      "affected_paths": [
+        "src/qa/smoke/20260313_154500.md",
+        "src/controllers/tournament.c.js",
+        "src/routers/tournament.r.js"
+      ],
+      "root_cause": "Follow-up smoke note records an error occurrence but without stack trace/context, so a complete closure artifact is missing even after related tournament/role refactors.",
+      "fix_summary": "Ongoing hardening appears in subsequent refactor commits, but a final explicit smoke closure record for this rerun is not present in scoped artifacts.",
+      "verification_notes": [
+        "Smoke rerun file has unresolved generic error note only.",
+        "Recommend capturing stack trace + repro after latest branch state to confirm closure."
+      ],
+      "confidence": "low"
+    }
+  ],
+  "commit_inventory": [
+    {
+      "commit": "a8295cae352f04008844d181c6f6d528f9a5d8d5",
+      "date": "2026-03-15",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "feat: add referee management functionality including database schema, model, and UI integration",
+      "classification": "feature-or-refactor",
+      "linked_bug_ids": [],
+      "files_changed_count": 9,
+      "insertions": 554,
+      "deletions": 6
+    },
+    {
+      "commit": "c9327aafe86b48707a4d5faa85a50d4026d8f4c3",
+      "date": "2026-03-15",
+      "author": "Bùi Đình Bảo",
+      "email": "112999623+fabyanbui@users.noreply.github.com",
+      "subject": "Merge pull request #4 from fabyanbui/feat/3-roles-authorize",
+      "classification": "merge",
+      "linked_bug_ids": [],
+      "files_changed_count": 0,
+      "insertions": 2637,
+      "deletions": 425
+    },
+    {
+      "commit": "bf3446cea6eb7fad7efae114dbcc990c31f7d11f",
+      "date": "2026-03-15",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "feat: enhance account and team management with role-based visibility and search functionality",
+      "classification": "bug-fix",
+      "linked_bug_ids": [
+        "FAB-BUG-006"
+      ],
+      "files_changed_count": 15,
+      "insertions": 272,
+      "deletions": 293
+    },
+    {
+      "commit": "3f80e1253b55938427af67596eae22636a4752b1",
+      "date": "2026-03-15",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "Implement role-based visibility and configuration for tournaments and teams",
+      "classification": "bug-investigation",
+      "linked_bug_ids": [
+        "FAB-BUG-007"
+      ],
+      "files_changed_count": 18,
+      "insertions": 572,
+      "deletions": 67
+    },
+    {
+      "commit": "c19f52e7ff7f127f5e83472296c1f00fccbf0934",
+      "date": "2026-03-15",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "Refactor tournament management views and update role toggles",
+      "classification": "bug-fix",
+      "linked_bug_ids": [
+        "FAB-BUG-006",
+        "FAB-BUG-007"
+      ],
+      "files_changed_count": 44,
+      "insertions": 1820,
+      "deletions": 408
+    },
+    {
+      "commit": "93c551c7cd499ec55956a18a3324eaae370efe7c",
+      "date": "2026-03-14",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "feat: implement account management and role assignment functionality",
+      "classification": "feature-or-refactor",
+      "linked_bug_ids": [],
+      "files_changed_count": 16,
+      "insertions": 338,
+      "deletions": 22
+    },
+    {
+      "commit": "13d9966b63a2bff5221d351dc2336a0a309ecf8b",
+      "date": "2026-03-14",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "fix: update admin seed password and add database connection termination command",
+      "classification": "bug-fix",
+      "linked_bug_ids": [
+        "FAB-BUG-004"
+      ],
+      "files_changed_count": 2,
+      "insertions": 11,
+      "deletions": 1
+    },
+    {
+      "commit": "74394c0b194bab35da6cd79cfda902a28e65294e",
+      "date": "2026-03-14",
+      "author": "Bùi Đình Bảo",
+      "email": "112999623+fabyanbui@users.noreply.github.com",
+      "subject": "Merge pull request #3 from fabyanbui/redo-db",
+      "classification": "merge",
+      "linked_bug_ids": [],
+      "files_changed_count": 0,
+      "insertions": 813,
+      "deletions": 133
+    },
+    {
+      "commit": "78f21427df4131ccdfba4ef8b23143b830738f3f",
+      "date": "2026-03-14",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "feat: enhance admin seeding process and ensure bootstrap safety net",
+      "classification": "bug-fix",
+      "linked_bug_ids": [
+        "FAB-BUG-004"
+      ],
+      "files_changed_count": 6,
+      "insertions": 218,
+      "deletions": 31
+    },
+    {
+      "commit": "56d42772b73d498556ca9e49b795e30408b6aa76",
+      "date": "2026-03-14",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "feat: implement role-based access control and seeded admin functionality",
+      "classification": "feature-or-refactor",
+      "linked_bug_ids": [],
+      "files_changed_count": 15,
+      "insertions": 393,
+      "deletions": 66
+    },
+    {
+      "commit": "8cb8e9f979dc29420b79054cfeb4b99c39b4e513",
+      "date": "2026-03-14",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "feat: fix team data visibility issue and enhance pagination handling",
+      "classification": "bug-fix",
+      "linked_bug_ids": [
+        "FAB-BUG-002"
+      ],
+      "files_changed_count": 4,
+      "insertions": 157,
+      "deletions": 62
+    },
+    {
+      "commit": "165fb748c14ceb070fbc4357fc77bafa4b86cea5",
+      "date": "2026-03-13",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "feat: add comprehensive documentation for product overview, API inventory, backend structure, system entities, tech stack, and user roles",
+      "classification": "feature-or-refactor",
+      "linked_bug_ids": [],
+      "files_changed_count": 7,
+      "insertions": 74,
+      "deletions": 3
+    },
+    {
+      "commit": "fb3bed64aaeb6bc4092bd495750fb65617caad20",
+      "date": "2026-03-13",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "feat: add initial smoke test documentation for tournament navigation",
+      "classification": "documentation",
+      "linked_bug_ids": [],
+      "files_changed_count": 1,
+      "insertions": 7,
+      "deletions": 0
+    },
+    {
+      "commit": "4e03fc69f1ef24fcf51b569531df91bccc687b7b",
+      "date": "2026-03-13",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "fix: resolve /tournament crash by updating SQL queries for own goals and cards",
+      "classification": "bug-fix",
+      "linked_bug_ids": [
+        "FAB-BUG-001"
+      ],
+      "files_changed_count": 2,
+      "insertions": 22,
+      "deletions": 11
+    },
+    {
+      "commit": "fa041cecfdfecaa83f25148cf267e181302c9954",
+      "date": "2026-03-13",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "docs: add error log documentation for tournament functionality",
+      "classification": "bug-investigation",
+      "linked_bug_ids": [
+        "FAB-BUG-007"
+      ],
+      "files_changed_count": 1,
+      "insertions": 37,
+      "deletions": 0
+    },
+    {
+      "commit": "9adb294116a12205c3de5d976680fdaa087f79d0",
+      "date": "2026-03-13",
+      "author": "Bùi Đình Bảo",
+      "email": "112999623+fabyanbui@users.noreply.github.com",
+      "subject": "Merge pull request #1 from fabyanbui/develop",
+      "classification": "merge",
+      "linked_bug_ids": [],
+      "files_changed_count": 0,
+      "insertions": 1802,
+      "deletions": 76
+    },
+    {
+      "commit": "2f447b63a2ea715815326329e7169e4869a52b74",
+      "date": "2026-03-13",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "feat: add multiple new documentation files for various functionalities and processes",
+      "classification": "documentation",
+      "linked_bug_ids": [],
+      "files_changed_count": 75,
+      "insertions": 0,
+      "deletions": 0
+    },
+    {
+      "commit": "1772e698938734c54616db80e4d89c5a2f727f75",
+      "date": "2026-03-13",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "feat: add comprehensive documentation for API, functional, non-functional, system overview, validation rules, and operational requirements",
+      "classification": "documentation",
+      "linked_bug_ids": [],
+      "files_changed_count": 5,
+      "insertions": 682,
+      "deletions": 0
+    },
+    {
+      "commit": "0403aa6238c2bb7fce032d3beec4ec2d0cf4ac2e",
+      "date": "2026-03-13",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "feat: add comprehensive test plan and strategy documentation for Football Tournament Management System",
+      "classification": "documentation",
+      "linked_bug_ids": [],
+      "files_changed_count": 2,
+      "insertions": 329,
+      "deletions": 0
+    },
+    {
+      "commit": "0c38507913fcef200aaa5ab48189f18ae4e894cc",
+      "date": "2026-03-12",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "docs: Add API inventory, backend structure, system entities, tech stack, and user roles documentation",
+      "classification": "documentation",
+      "linked_bug_ids": [],
+      "files_changed_count": 7,
+      "insertions": 302,
+      "deletions": 66
+    },
+    {
+      "commit": "efd76e12191a1b60fa24d498d3598ee843b8e891",
+      "date": "2026-02-25",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "fix: update PostgreSQL port to 5433 in configuration and setup documentation",
+      "classification": "bug-fix",
+      "linked_bug_ids": [
+        "FAB-BUG-003"
+      ],
+      "files_changed_count": 3,
+      "insertions": 47,
+      "deletions": 50
+    },
+    {
+      "commit": "b07e9393ee60a545ea956afbbe22e5791455a6af",
+      "date": "2026-02-25",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "chore: connect to the database after creation in the initialization script.",
+      "classification": "feature-or-refactor",
+      "linked_bug_ids": [],
+      "files_changed_count": 1,
+      "insertions": 1,
+      "deletions": 0
+    },
+    {
+      "commit": "02411adbaec9481d250b9c97fddb2076305ac81e",
+      "date": "2026-02-25",
+      "author": "Bui Dinh Bao",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "docs: Add comprehensive documentation for AI agents and developer setup, and update server configuration.",
+      "classification": "documentation",
+      "linked_bug_ids": [],
+      "files_changed_count": 3,
+      "insertions": 491,
+      "deletions": 10
+    },
+    {
+      "commit": "0b7c1595257118b4cadf9f888932c0949851e596",
+      "date": "2024-01-21",
+      "author": "Bùi Đình Bảo",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "Prepare for Match events",
+      "classification": "feature-or-refactor",
+      "linked_bug_ids": [],
+      "files_changed_count": 5,
+      "insertions": 22,
+      "deletions": 11
+    },
+    {
+      "commit": "11c74c579933308c5255635569683e7bd9227ecb",
+      "date": "2024-01-21",
+      "author": "Bùi Đình Bảo",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "Complete match logs",
+      "classification": "feature-or-refactor",
+      "linked_bug_ids": [],
+      "files_changed_count": 4,
+      "insertions": 17,
+      "deletions": 3
+    },
+    {
+      "commit": "a29ae3b4287ab9790fd651197fa5a809fdabe6d6",
+      "date": "2024-01-21",
+      "author": "Bùi Đình Bảo",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "Update auto generate events start match and finish match",
+      "classification": "feature-or-refactor",
+      "linked_bug_ids": [],
+      "files_changed_count": 3,
+      "insertions": 19,
+      "deletions": 8
+    },
+    {
+      "commit": "8157089d92330243bf40b5338fdba22b43e801ef",
+      "date": "2024-01-21",
+      "author": "Bùi Đình Bảo",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "Counter on match details; Match Details",
+      "classification": "feature-or-refactor",
+      "linked_bug_ids": [],
+      "files_changed_count": 7,
+      "insertions": 97,
+      "deletions": 32
+    },
+    {
+      "commit": "fa5f15d2b3dbe9bbc94889318e215fe4393073db",
+      "date": "2024-01-21",
+      "author": "Bùi Đình Bảo",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "Add recent schedules and fix bugs",
+      "classification": "bug-fix",
+      "linked_bug_ids": [
+        "FAB-BUG-005"
+      ],
+      "files_changed_count": 9,
+      "insertions": 84,
+      "deletions": 5
+    },
+    {
+      "commit": "465aa7f067c45f100f71d90b2f12adfca9150fc7",
+      "date": "2024-01-19",
+      "author": "Bùi Đình Bảo",
+      "email": "21120201@student.hcmus.edu.vn",
+      "subject": "Update readme.md",
+      "classification": "documentation",
+      "linked_bug_ids": [],
+      "files_changed_count": 1,
+      "insertions": 1,
+      "deletions": 0
+    }
+  ]
+}

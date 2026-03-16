@@ -1,137 +1,162 @@
-# Test Strategy — Football Tournament Management System
+# Test Strategy — Football Tournament Management System (AQR-Aligned)
 
-## 1. System Overview
+## 1) Purpose
 
-The Football Tournament Management System is a web application for organizing and tracking football tournaments. Administrators create and manage a single active tournament, schedule matches, accept/reject team registrations, and record live match events. Regular users register accounts, manage their own team, browse tournament information, and view statistics.
+This strategy defines how QA will verify release readiness for the Football Tournament Management system using `qa/advanced-requirements.md` as the requirement baseline.
 
-**Technology stack:**
-| Layer | Technology |
-|---|---|
-| Frontend | Server-side rendered Handlebars (`.hbs`) templates + static HTML / CSS / Vanilla JS (Bootstrap 5) |
-| Backend | Node.js + Express.js (MVC: routers → controllers → models) |
-| Database | PostgreSQL via `node-postgres` (raw SQL, no ORM) with 8 auto-update triggers |
-| Authentication | Passport.js local strategy + bcrypt; sessions via `express-session` (in-memory store) |
-| File upload | multer (avatars, logos, banners saved to `public/`) |
-| Scheduler | node-schedule (auto-marks matches as played/finished by date+time) |
+Primary objectives:
 
-**User roles:**
+- Ensure every release-scope requirement has explicit, testable coverage.
+- Prioritize testing by business risk and requirement criticality.
+- Make deferred functionality visible as managed exclusions, not silent gaps.
+- Establish repeatable quality gates for go/no-go decisions.
 
-| Role | `privilege` | Capabilities |
+## 2) Requirement Baseline and Scope Model
+
+### 2.1 Baseline Source
+
+Requirement source of truth: `qa/advanced-requirements.md`
+
+- Functional requirements: `AQR-FR-001..AQR-FR-025`
+- Non-functional requirements: `AQR-NFR-001..AQR-NFR-012`
+- Process/governance requirements: `AQR-PR-001..AQR-PR-005`
+
+### 2.2 Scope Decision Rules
+
+- `Implemented` and `Implemented with Risk`: full functional + regression coverage required.
+- `Partial`: coverage required for implemented behavior plus explicit gap validation.
+- `Deferred`: excluded from release pass criteria, but tracked in risk/backlog reporting.
+
+### 2.3 Release-Scope by Priority
+
+| Scope Bucket | Included Requirement IDs | Strategy |
 |---|---|---|
-| Guest | — | Browse public pages (home, about, teams, tournament, matches, statistics) |
-| User | 0 | All guest actions + register/login, create/manage own team, view profile |
-| Admin | 1 | All user actions + create tournament, accept/reject teams, edit matches and match events |
+| P1 Critical | FR-001, 002, 003, 004, 005, 007, 008, 009, 010, 011, 012, 013, 014, 021 | Deep negative-path and security-first coverage; must be fully triaged before sign-off |
+| P2 High | FR-006, 015, 016, 020, 022, 023, 024 | Validate current behavior, partial implementations, and visible limitations |
+| P3 Controlled Backlog | FR-017, 018, 019, 025 | Track as deferred scope with explicit exclusion statements in reporting |
+| NFR Core | NFR-001..012 | Security, integrity, performance smoke, compatibility, traceability, governance checks |
+| QA Process | PR-001..005 | Enforce change/risk/test artifact governance during execution and reporting |
 
-**Auth flow:** Login and Register are JSON fetch APIs (not traditional form POST). The server returns `{status, message}` and the client redirects on success.
+Deferred requirements with higher business urgency (`FR-021`, `FR-022`, `FR-023`) remain excluded from release pass criteria unless product scope is explicitly reactivated.
 
-**Known pre-existing bugs discovered during exploration:**
-1. `controllers/tournament.c.js:24` — `matches.reduce()` on an empty array crashes the server process (unhandled exception, no try-catch, no initial value)
-2. `utils/database/dbMatches.js:47–50` — `getNumberOfOwnGoalsInTournament` SQL subquery is missing a required alias → PostgreSQL error crashes server
-3. `utils/database/dbMatches.js:57–61` — `getNumberOfCardsInTournament` same missing alias bug
-4. `routers/auth.r.js` — `/login/with-google` and `/login/with-facebook` buttons render in the UI but the routes are not defined → 404 on click
-5. `controllers/auth.c.js:82` — `POST /forgot-password` is not implemented; returns raw text
-6. `utils/auth-helper.js:27` — `checkOwnTeam` middleware references undefined `teamDb`; it is never applied to any route but would throw if called
+## 3) Risk-Based Test Approach
 
----
-
-## 2. Test Scope
-
-### In Scope
-- Authentication: register, login, logout, session management, "remember me", access guards
-- User profile: view, edit (fullname, birthday, phone, introduction, avatar upload), change password
-- Team management: create, edit, delete, view; manage players (add/remove/avatar); upload logo
-- Tournament public views: overview, teams list, leaderboard, match schedule (by round), match details, statistics (teams & players)
-- Tournament admin: create tournament, update info, upload logo/banner, accept/reject team registrations, edit match schedule, record goals/cards/own goals, manage player lineup
-- Management dashboard: user's own teams, admin ticket view (stub page)
-- Role-based access control: all three guards (`checkAuthenticated`, `checkAdmin`, `checkNotAuthenticated`) and the `checkTournament` redirect
-- Input validation and server-side error handling for all forms and JSON APIs
-- DB trigger correctness (statistics auto-update on match events and status changes)
-- 404 fallback page
-
-### Out of Scope
-- Ticket purchasing / sales (feature not implemented end-to-end)
-- Email delivery for password reset
-- Social OAuth login (Google, Facebook — routes not defined)
-- Mobile / responsive layout testing
-- Infrastructure, deployment pipeline, or load-balancing layer
-- `GET /test` and `POST /test` debug endpoints
-
----
-
-## 3. Test Levels
-
-| Level | Description | Primary Scope |
-|---|---|---|
-| **Unit** | Test individual functions in isolation, with all I/O dependencies mocked | DB query helpers (`dbUsers`, `dbTeams`, `dbMatches`, `dbPlayers`, `dbTournaments`), model constructors and static methods, helper utilities (`auth-helper.js`, `tournament-helper.js`), input-validation logic in controllers |
-| **Integration** | Test the interaction between controllers, models, and a real test database | Route → controller → model → DB → response; DB trigger behaviour after INSERT/UPDATE |
-| **System (E2E)** | Test complete user flows through the running application in a browser | Full flows: register → login → create team → view tournament → admin accept team → record match event |
-| **Acceptance** | Validate the system against the stated requirements and use cases | Use cases from `docs/requirements/rup_ucspec.pdf`; reviewed by stakeholders |
-
----
-
-## 4. Test Types
-
-| Test Type | Description |
-|---|---|
-| **Functional Testing** | Verify each feature works as specified: CRUD operations produce correct data, navigation leads to the right pages, state transitions (team approval, match played/finished) behave correctly. Covers both happy paths and expected error paths (e.g., duplicate email, wrong password). |
-| **API Testing** | Validate every Express HTTP endpoint — method, path, request payload (JSON or multipart), HTTP status code, and response body. Includes boundary inputs, missing fields, and invalid data. Endpoints use JSON responses for mutating actions and HTML renders for GETs. |
-| **UI Testing** | Verify page rendering (correct titles, data displayed), navigation links, form controls, toast/error messages, and redirection behaviour using browser automation (Playwright). Also tests that protected pages redirect unauthenticated users. |
-| **Security Testing** | Test all three auth guards (`checkAuthenticated`, `checkAdmin`, `checkNotAuthenticated`) by accessing protected routes without or with insufficient credentials. Verify bcrypt password hashing, session isolation, and that team-ownership checks prevent users from editing other users' teams. |
-| **Database Testing** | Verify SQL queries return correct data; test all 8 DB triggers: `teams_statistics` rows created/deleted on team status change, `matches.scores_*` updated on goal events, `teams_statistics.wins/draws/losses` updated on match finish, `winner_id` updated on score change. |
-| **Regression Testing** | Re-run the full test suite after every code change to confirm no previously passing tests break. Especially critical after fixing the known bugs. |
-| **Performance Testing** | Measure response time and throughput of the heaviest pages (tournament overview, leaderboard, statistics) which make multiple sequential DB queries. Identify N+1 query patterns in team/player loops. |
-| **Usability Testing** | Manual/exploratory evaluation of UI clarity, form feedback (toast messages), navigation consistency, and Vietnamese-language content correctness. |
-
----
-
-## 5. Automation Strategy
-
-| Layer | Recommended Tool | What to Automate |
-|---|---|---|
-| Unit | Jest + mock for `db.pool.query` | DB helper functions, model constructors, controller validation logic, auth/tournament helpers |
-| API (Integration) | Supertest + Jest + test DB | All 40+ routes: status codes, response shape, auth guards (unauthenticated, non-admin), validation errors |
-| UI / E2E | Playwright | Critical flows: register, login, create team, browse tournament overview, admin accept team, record goal |
-| DB Triggers | Jest + test DB | Insert match_event → assert teams_statistics updated; update match is_finished → assert wins/losses updated |
-| CI | GitHub Actions | Unit + API tests on every push/PR; E2E tests on merge to `main` |
-
-Manual testing is required for: file upload UX (logo, banner, avatar), toast message feedback timing, exploratory/edge-case sessions, and acceptance with stakeholders.
-
----
-
-## 6. Test Environment
-
-| Environment | Purpose | Configuration |
-|---|---|---|
-| **Local Development** | Unit and exploratory testing | Local PostgreSQL on port 5433; `.env` with `DB_*` and `SESSION_SECRET` |
-| **Test / CI** | Automated API, integration, and E2E tests | Isolated PostgreSQL DB reset with `resources/initialize.sql` before each test suite; deterministic seed data |
-| **Production (smoke)** | Verify deployment health | Read-only critical-path checks: login, home page, tournament overview; no writes |
-
-**Setup for any test environment:**
-```bash
-# 1. Start PostgreSQL
-# 2. Init/reset DB
-PGPASSWORD=1 psql -U postgres -h localhost -p 5433 -f src/resources/initialize.sql
-# 3. Install dependencies
-npm install
-# 4. Set .env (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, SESSION_SECRET, SALT_ROUNDS)
-# 5. Start app
-npm start
-```
-
----
-
-## 7. Risks
-
-| Risk | Impact | Likelihood | Mitigation |
+| Risk Area | Related AQR IDs | Why High Risk | Test Emphasis |
 |---|---|---|---|
-| **Server crashes on empty matches array** (`tournament.c.js:24`) | Entire server process dies; all routes become unreachable | **High** (happens whenever no matches exist) | Fix: add guard `if (matches.length === 0)` before `.reduce()`; add regression test |
-| **SQL subquery alias bug** (`dbMatches.js:47–61`) | Tournament overview page crashes server | **High** (triggered on every `/tournament` visit) | Fix: add `AS t` alias to subqueries; add integration tests for both functions |
-| **Social login 404** (`/login/with-google`, `/login/with-facebook`) | Users see 404 instead of error message | Medium | Implement routes or hide buttons; add UI test asserting graceful fallback |
-| **`POST /forgot-password` stub** | Password recovery is non-functional | Medium | Implement or explicitly disable with a user-facing message; mark as known gap in tests |
-| **Team ownership enforced in controller, not middleware** | Any authenticated user can potentially edit any team if ownership check in controller has a bug | **High** | Add explicit security tests: authenticated user B attempts to edit/delete user A's team |
-| **`checkOwnTeam` middleware uses undefined `teamDb`** | Would throw a ReferenceError if called | Low (never applied to routes) | Remove the dead code or fix the reference; add lint rule for undefined variables |
-| **In-memory session store** | Sessions lost on server restart break test continuity | Medium | Use `connect-pg-simple` in test environments; reset cookies between test suites |
-| **Raw SQL — no ORM** | SQL injection risk if parameters are not properly bound; malformed queries crash the server | Medium | Verify all queries use parameterized placeholders (`$1`, `$2`); add security tests with special characters in inputs |
-| **No existing test suite (zero coverage baseline)** | Any regression goes undetected | **High** | Prioritize fixing the 3 server-crash bugs first, then build API test baseline |
-| **DB trigger side effects in tests** | Inserting a match_event in one test silently mutates `teams_statistics` affecting other tests | Medium | Wrap each test in a DB transaction that is rolled back; or re-seed the DB before each suite |
-| **node-schedule auto-updates matches** | Scheduler may change `is_played`/`is_finished` during test runs | Low | Disable scheduler in the test environment or mock `node-schedule` |
+| Authentication and authorization boundaries | FR-001..006, NFR-001, NFR-002 | Security and access failures impact all modules | Negative access matrix, session behavior, role/ownership checks |
+| Tournament and match core operations | FR-007..014 | Core product value and frequent user/admin flows | End-to-end flow validation, state transitions, data consistency |
+| Statistics integrity and triggers | FR-012, FR-015, FR-024, NFR-008 | Silent data corruption risk | DB trigger-focused integration checks and reconciliation checks |
+| Partial/deferred business flows | FR-004, FR-010, FR-015, FR-020..023 | Scope ambiguity and release expectation mismatch | Explicit gap tests and documented non-goals |
+| Operational quality controls | NFR-003..007, NFR-010..012, PR-001..005 | Performance, reliability, and governance can fail late | Smoke budgets, resilience checks, artifact audits |
+
+## 4) Coverage Architecture
+
+### 4.1 Coverage Dimensions
+
+- Requirement coverage: each test artifact links to one or more `AQR-*` IDs.
+- Surface coverage: route/controller/model/database trigger/view alignment.
+- Risk coverage: every high-risk area has targeted negative and resilience scenarios.
+- Lifecycle coverage: smoke, feature, regression, and release-signoff evidence.
+
+### 4.2 Traceability Standard
+
+Each test case/suite must include:
+
+- Test ID
+- Mapped `AQR-*` requirement ID(s)
+- Module/route surface
+- Test level and type
+- Priority (`P1/P2/P3`)
+- Evidence link (manual sheet, smoke report, or automated result)
+- Defect linkage (if failed)
+
+## 5) Test Levels and Test Types
+
+| Level/Type | Strategy |
+|---|---|
+| Functional | Validate end-user and admin workflows against `AQR-FR-*` statements, including positive and negative paths |
+| API/Controller | Validate request contracts, HTTP status behavior, and error messaging for route actions |
+| Integration (DB + business logic) | Validate controller/model/DB interaction and trigger side effects |
+| Security/RBAC | Validate `checkAuthenticated`, `checkNotAuthenticated`, `checkAdmin`, `checkTournamentStaff`, ownership checks |
+| UI/System | Validate critical navigation/rendering/flow continuity across key pages |
+| NFR Smoke | Validate baseline responsiveness, compatibility checks, and resilience assumptions |
+| Process QA | Validate requirement changes, risk log updates, traceability updates, and deliverable completeness (`AQR-PR-*`) |
+
+## 6) Execution Model
+
+| Wave | Focus | Exit Gate |
+|---|---|---|
+| Wave 0: Environment + Smoke | App boot, DB seed/reset integrity, core routes reachable | Environment is stable and smoke blockers resolved |
+| Wave 1: P1 Functional + Security | Auth, RBAC, tournament/team/match core operations | No open critical defects on P1 coverage |
+| Wave 2: P2 + NFR | Partial features, stats quality, NFR smoke and compatibility checks | P2 behavior validated with accepted residual risks |
+| Wave 3: Deferred Governance | Deferred scope confirmation and reporting | Deferred list acknowledged and approved by stakeholders |
+
+## 7) Environment and Test Data Strategy
+
+### 7.1 Environment Baseline
+
+- Stack: Node.js + Express + PostgreSQL + Handlebars.
+- Sessions: in-memory session store (operational limitation documented in reports).
+- Scheduler: `node-schedule` job runs periodically; tests must control timing-sensitive checks.
+
+### 7.2 Data Management Rules
+
+- Use resettable seeded database baseline from `resources/initialize.sql`.
+- Keep deterministic role coverage (`admin`, `tournament_organizer`, `team_manager`).
+- Maintain dedicated edge-case data for partial/deferred behavior verification.
+- For trigger-sensitive validation, snapshot relevant rows before/after event actions.
+
+## 8) Tooling Strategy
+
+Current-state execution assets:
+
+- Manual suites: `qa/manual/**/*.xlsx`
+- Smoke reports: `qa/smoke/*.md` and `qa/smoke-fix/*.md`
+- Defect tracking artifacts: `qa/bug-reports/*`
+
+Automation roadmap (incremental):
+
+- API/integration baseline for P1 routes.
+- DB integrity checks for trigger-heavy flows.
+- UI smoke for core user/admin journeys.
+
+## 9) Defect and Triage Strategy
+
+Defects are classified by release risk:
+
+- Critical: security breaches, data corruption, blocking core P1 flow.
+- High: major functional failure without practical workaround.
+- Medium: partial degradation with workaround.
+- Low: cosmetic/documentation/localized non-blocking issues.
+
+Triage rules:
+
+- Every defect must map to impacted `AQR-*` IDs.
+- Deferred-scope findings are tracked separately from release blockers.
+- Reopened defects require regression evidence updates.
+
+## 10) Quality Gates (Entry/Exit Criteria)
+
+### Entry Criteria
+
+- Requirement baseline (`qa/advanced-requirements.md`) is stable for the cycle.
+- Environment and DB seed/reset procedures are validated.
+- Scope classification (Implemented/Partial/Deferred) is frozen for the cycle.
+
+### Exit Criteria
+
+- 100% of P1 requirements have executed test evidence and approved outcomes.
+- P2 requirements are executed or explicitly accepted as residual risk.
+- NFR and PR obligations have execution evidence (or approved exceptions).
+- Deferred items are explicitly documented as out-of-scope for release.
+
+## 11) Governance and Reporting
+
+Per cycle, QA publishes:
+
+- Updated `qa/test-strategy.md` (this document)
+- Updated `qa/test-plan.md` with traceability and execution planning
+- Execution report (pass/fail by requirement and priority)
+- Defect summary with severity trend and unresolved-risk statement
+
+This governance directly supports `AQR-PR-001..005` and `AQR-NFR-011..012`.
