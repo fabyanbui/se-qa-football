@@ -1,192 +1,153 @@
-# Test Plan — Football Tournament Management System
+# Test Plan — Football Tournament Management System (AQR-Aligned)
 
-## Objective
+## 1) Objective
 
-Verify that all implemented features of the Football Tournament Management System are correct, secure, and stable before deployment. This plan maps each system feature to the applicable test types, identifies known defects and gaps, and defines priorities and exit criteria for the test phase.
+Provide an execution-ready QA plan that maps requirement baseline (`AQR-FR-*`, `AQR-NFR-*`, `AQR-PR-*`) to concrete test suites, entry/exit gates, and reporting outputs for release decisions.
 
-## References
+## 2) References
 
 | Document | Path |
 |---|---|
-| Test Strategy | `src/qa/test-strategy.md` |
-| API Inventory | `src/docs/api-inventory.md` |
-| Backend Structure | `src/docs/backend-structure.md` |
-| Database Schema | `src/resources/initialize.sql` |
-| Use-Case Specification | `docs/requirements/rup_ucspec.pdf` |
+| Advanced requirement baseline | `qa/advanced-requirements.md` |
+| Test strategy | `qa/test-strategy.md` |
+| Manual test assets | `qa/manual/**/*.xlsx` |
+| Smoke execution history | `qa/smoke/*.md`, `qa/smoke-fix/*.md` |
+| Defect tracking artifacts | `qa/bug-reports/*` |
+| Database schema and seed | `resources/initialize.sql` |
 
----
+## 3) Test Items and Execution Boundaries
 
-## Known Defects (Pre-existing Bugs)
+### 3.1 In-Scope for Release Validation
 
-The following bugs were discovered during exploration and **must be fixed before test execution** (they block the test suite):
+- Implemented and partial requirements from `AQR-FR-*`.
+- Security, integrity, and operational quality controls from `AQR-NFR-*`.
+- QA governance obligations from `AQR-PR-*`.
 
-| ID | Severity | Location | Description |
+### 3.2 Controlled Exclusions
+
+Deferred requirements (`AQR-FR-017`, `018`, `019`, `021`, `022`, `023`, `025`) remain outside release pass/fail criteria, but must appear in risk and scope-exclusion reporting.
+
+## 4) Suite Inventory
+
+| Suite ID | Coverage Focus | Level/Type | Primary Evidence Source |
 |---|---|---|---|
-| BUG-01 | 🔴 Critical | `controllers/tournament.c.js:24` | `matches.reduce()` on empty array — crashes entire server process with unhandled exception when no matches exist |
-| BUG-02 | 🔴 Critical | `utils/database/dbMatches.js:47–50` | SQL subquery missing alias in `getNumberOfOwnGoalsInTournament` → PostgreSQL syntax error crashes server |
-| BUG-03 | 🔴 Critical | `utils/database/dbMatches.js:57–61` | SQL subquery missing alias in `getNumberOfCardsInTournament` → same crash as BUG-02 |
-| BUG-04 | 🟡 Medium | `views/login.hbs`, `views/register.hbs` | "Login with Google/Facebook" buttons render but routes `/login/with-google` and `/login/with-facebook` are undefined → 404 |
-| BUG-05 | 🟡 Medium | `controllers/auth.c.js:82` | `POST /forgot-password` returns raw stub text instead of a proper response or error |
-| BUG-06 | 🟠 Low | `utils/auth-helper.js:27` | `checkOwnTeam` references undefined `teamDb` — dead code but would throw `ReferenceError` if invoked |
+| SU-AUTH | Registration, login, logout, forgot-password baseline, admin registration | Functional/API/Security | `qa/manual/authentication/*.xlsx` |
+| SU-RBAC | Auth guards, ownership checks, role boundaries | Security/Integration | `qa/manual/access-control/*.xlsx` |
+| SU-PROFILE | Profile view/edit/change-password/avatar | Functional/API | `qa/manual/profile/*.xlsx` |
+| SU-TEAMS-MGMT | Team create/edit/delete, players CRUD, logo/avatar upload | Functional/API/Integration | `qa/manual/teams-management/*.xlsx` |
+| SU-TEAMS-PUBLIC | Team listing/details/members/statistics | Functional/UI | `qa/manual/teams-public/*.xlsx` |
+| SU-TOURNAMENT-VIEW | Tournament overview, teams, leaderboard, matches, stats | Functional/UI | `qa/manual/tournament-overview/*.xlsx` |
+| SU-TOURNAMENT-ADMIN | Tournament modifications and team approval/rejection | Functional/API/Integration | `qa/manual/tournament-modifications-admin/*.xlsx` |
+| SU-MATCH-ADMIN | Match edit flows, goals/cards/players/tickets-tab behavior | Functional/API/DB | `qa/manual/match-management-admin/*.xlsx` |
+| SU-MANAGEMENT | Management dashboard surfaces and permissions | Functional/Security | `qa/manual/management-dashboard/*.xlsx` |
+| SU-INTEGRATIONS | Scheduler behavior, FK integrity, trigger-driven consistency | Integration/DB | `qa/manual/system-integrations/*.xlsx` |
+| SU-RESILIENCE | Validation errors, API errors, authorization redirects, 404 handling | Negative/Resilience | `qa/manual/error-and-resilience/*.xlsx` |
+| SU-NFR | Performance smoke, compatibility checks, session behavior, traceability quality | NFR/Operational | QA execution logs + summary report |
+| SU-PROCESS | Requirement-change, risk, artifact and ownership governance checks | Process QA | Cycle report + defect/risk logs |
+| SU-DEFERRED | Explicit deferred-scope verification and release exclusion reporting | Governance | Test summary + risk register |
 
----
+## 5) Requirement Traceability Matrix
 
-## Feature × Test Type Matrix
+### 5.1 Functional Requirements (`AQR-FR-*`)
 
-**Legend:** ✅ Applicable &nbsp;|&nbsp; — Not applicable / out of scope &nbsp;|&nbsp; ⚠️ Blocked by known bug
+| Requirement ID | Baseline Status | Priority | Planned Suite(s) | Acceptance Intent |
+|---|---|---|---|---|
+| AQR-FR-001 | Implemented | P1 | SU-AUTH | Registration validates inputs and prevents duplicate email |
+| AQR-FR-002 | Implemented | P1 | SU-AUTH | Authentication establishes valid session and remember-me behavior |
+| AQR-FR-003 | Implemented | P1 | SU-AUTH | Logout terminates session and prevents access to protected pages |
+| AQR-FR-004 | Partial | P1 | SU-AUTH, SU-RESILIENCE | Existing forgot-password behavior validated; missing reset lifecycle logged as gap |
+| AQR-FR-005 | Implemented | P1 | SU-RBAC, SU-AUTH | Role-based and ownership restrictions enforced for all protected paths |
+| AQR-FR-006 | Implemented | P2 | SU-AUTH, SU-RBAC | Controlled admin account creation is restricted to authorized role |
+| AQR-FR-007 | Implemented | P1 | SU-TOURNAMENT-ADMIN | Tournament creation with metadata/logo/banner works end-to-end |
+| AQR-FR-008 | Implemented with Risk | P1 | SU-TOURNAMENT-VIEW, SU-RESILIENCE | Tournament overview and related public views are stable and accurate |
+| AQR-FR-009 | Implemented | P1 | SU-TOURNAMENT-ADMIN, SU-INTEGRATIONS | Team approve/reject flow works and preserves consistency |
+| AQR-FR-010 | Partial | P1 | SU-TEAMS-MGMT, SU-TOURNAMENT-ADMIN | Team enrollment paths work for implemented routes; limitations documented |
+| AQR-FR-011 | Implemented | P1 | SU-TOURNAMENT-ADMIN, SU-MATCH-ADMIN | Organizers can adjust schedule/match details with valid constraints |
+| AQR-FR-012 | Implemented | P1 | SU-MATCH-ADMIN, SU-INTEGRATIONS | Goal/card/event updates persist and update match state correctly |
+| AQR-FR-013 | Implemented | P1 | SU-TEAMS-MGMT | Team profile update and logo handling meet expected behavior |
+| AQR-FR-014 | Partial | P1 | SU-TEAMS-MGMT, SU-RBAC | Player CRUD and ownership control validated; gaps explicitly tracked |
+| AQR-FR-015 | Partial | P2 | SU-TEAMS-PUBLIC, SU-TOURNAMENT-VIEW | Team statistics details/limitations are transparent and test-evidenced |
+| AQR-FR-016 | Implemented | P2 | SU-TEAMS-PUBLIC | Participating team profile browsing is correct and accessible |
+| AQR-FR-017 | Deferred | P3 | SU-DEFERRED | Announcement workflows documented as excluded from release scope |
+| AQR-FR-018 | Deferred | P3 | SU-DEFERRED | Winner announcement workflow documented as excluded from release scope |
+| AQR-FR-019 | Deferred | P3 | SU-DEFERRED | Report export workflow documented as excluded from release scope |
+| AQR-FR-020 | Partial | P2 | SU-PROFILE, SU-MANAGEMENT | Spectator-related profile assumptions validated within current model limits |
+| AQR-FR-021 | Deferred | P1 | SU-DEFERRED | Ticket inventory/workflows explicitly marked deferred despite high business impact |
+| AQR-FR-022 | Deferred | P2 | SU-DEFERRED | Invoice lifecycle remains excluded and tracked in risk register |
+| AQR-FR-023 | Deferred | P2 | SU-DEFERRED | Best-player voting remains excluded and tracked in risk register |
+| AQR-FR-024 | Partial | P2 | SU-TOURNAMENT-VIEW, SU-INTEGRATIONS | Tournament/team/player statistics are validated for implemented behavior |
+| AQR-FR-025 | Deferred | P3 | SU-DEFERRED | Communication tooling excluded and tracked for future scope |
 
-| Feature | Functional | Unit | Integration | API | UI | Security | Performance | DB |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Authentication** | | | | | | | | |
-| User Registration (email + password) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Registration — duplicate email rejected | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | ✅ |
-| Registration — password mismatch rejected | ✅ | ✅ | — | ✅ | ✅ | — | — | — |
-| User Login (JSON fetch, session cookie) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Login — wrong credentials returns 400 | ✅ | — | ✅ | ✅ | ✅ | — | — | — |
-| Login — "Remember Me" extends cookie | ✅ | — | ✅ | ✅ | — | ✅ | — | — |
-| User Logout | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Forgot Password page renders | ✅ | — | — | ✅ | ✅ | — | — | — |
-| POST /forgot-password (stub — not implemented) | ⚠️ | — | — | ✅ | — | — | — | — |
-| Redirect authenticated user away from /login, /register | — | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Social login buttons visible in UI | — | — | — | — | ✅ | — | — | — |
-| **User Profile** | | | | | | | | |
-| View own profile (requires login) | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Edit profile — fullname, birthday, phone, bio | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Edit profile — empty fullname rejected (400) | ✅ | ✅ | — | ✅ | ✅ | — | — | — |
-| Edit profile — invalid date rejected (400) | ✅ | ✅ | — | ✅ | ✅ | — | — | — |
-| Edit profile — phone not 10 digits rejected (400) | ✅ | ✅ | — | ✅ | ✅ | — | — | — |
-| Edit profile — introduction > 300 chars rejected (400) | ✅ | ✅ | — | ✅ | ✅ | — | — | — |
-| Upload avatar (multipart file) | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Change password — success flow | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Change password — new password < 6 chars rejected | ✅ | ✅ | — | ✅ | ✅ | — | — | — |
-| Change password — new equals old rejected | ✅ | ✅ | — | ✅ | ✅ | — | — | — |
-| Change password — wrong current password rejected | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — |
-| Profile page requires authentication | — | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| **Team Management** | | | | | | | | |
-| Browse all teams (paginated, 9/page) | ✅ | — | ✅ | ✅ | ✅ | — | ✅ | — |
-| View team info (`/teams/:id`) | ✅ | — | ✅ | ✅ | ✅ | — | — | — |
-| View team members (`/teams/:id/members`) | ✅ | — | ✅ | ✅ | ✅ | — | — | — |
-| View team statistics (`/teams/:id/statistics`) | ✅ | — | ✅ | ✅ | ✅ | — | — | ✅ |
-| Create team (requires login) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Edit team info (owner only) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Non-owner cannot edit team (security) | — | — | ✅ | ✅ | — | ✅ | — | — |
-| Upload team logo | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Delete team (owner only) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Non-owner cannot delete team (security) | — | — | ✅ | ✅ | — | ✅ | — | — |
-| Add player to team | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Remove player from team | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Upload player avatar | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Team/player pages require `checkTournament` | — | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| **Tournament — Public Views** | | | | | | | | |
-| Tournament overview page *(blocked by BUG-01, BUG-02, BUG-03)* | ⚠️ | ✅ | ⚠️ | ⚠️ | ⚠️ | — | ✅ | — |
-| Tournament teams list | ✅ | — | ✅ | ✅ | ✅ | — | — | — |
-| Teams leaderboard (sorted by points) | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ |
-| Match schedule — default round 1 | ✅ | — | ✅ | ✅ | ✅ | — | — | — |
-| Match schedule — query `?round=N` | ✅ | — | ✅ | ✅ | ✅ | — | — | — |
-| Match detail page (`/tournament/matches/:id`) | ✅ | — | ✅ | ✅ | ✅ | — | — | ✅ |
-| Team statistics page | ✅ | — | ✅ | ✅ | ✅ | — | — | ✅ |
-| Player statistics page | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | ✅ |
-| **Tournament — Admin Modifications** | | | | | | | | |
-| Admin modifications overview (requires admin) | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Non-admin redirected away from modifications | — | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Update tournament info (name, dates, location) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Upload tournament logo | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Upload tournament banner | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Accept team registration — success | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Accept team — no profile → error | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — |
-| Accept team — already accepted → error | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| Reject team registration — success | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Reject team — already rejected → error | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| DB trigger: `teams_statistics` row created on team accept | — | — | ✅ | — | — | — | — | ✅ |
-| DB trigger: `teams_statistics` row deleted on team reject | — | — | ✅ | — | — | — | — | ✅ |
-| Edit match schedule (teams, date, time, place) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| **Match Event Editing (Admin)** | | | | | | | | |
-| Match edit page renders (requires admin) | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Record goal — success | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Record goal — missing field → error | ✅ | ✅ | — | ✅ | — | — | — | — |
-| DB trigger: goal → `matches.scores_*` incremented | — | — | ✅ | — | — | — | — | ✅ |
-| DB trigger: goal → `teams_statistics.goals` incremented | — | — | ✅ | — | — | — | — | ✅ |
-| DB trigger: goal → opponent `a_goals` incremented | — | — | ✅ | — | — | — | — | ✅ |
-| Record own goal | ✅ | ✅ | ✅ | ✅ | — | — | — | ✅ |
-| DB trigger: own goal → `teams_statistics.own_goals` incremented | — | — | ✅ | — | — | — | — | ✅ |
-| Record yellow card | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Record red card | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| DB trigger: yellow/red card → `teams_statistics.yellow/red_cards` incremented | — | — | ✅ | — | — | — | — | ✅ |
-| DB trigger: match finished → wins/draws/losses updated | — | — | ✅ | — | — | — | — | ✅ |
-| DB trigger: score change → `winner_id` updated | — | — | ✅ | — | — | — | — | ✅ |
-| DB trigger: score change → leaderboard `score` (W×3 + D) updated | — | — | ✅ | — | — | — | — | ✅ |
-| View player lineup for match (admin) | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Match edit tickets page renders (stub — not implemented) | ✅ | — | — | ✅ | ✅ | ✅ | — | — |
-| **Management Dashboard** | | | | | | | | |
-| My teams dashboard (`/management`) — requires login | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Ticket management page (`/management/tickets`) — requires admin | ✅ | — | — | ✅ | ✅ | ✅ | — | — |
-| Non-admin redirected from ticket management | — | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| **Tournament Creation** | | | | | | | | |
-| Create tournament — page renders (admin, no active tournament) | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| POST tournament info | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Upload tournament logo at creation | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| Upload tournament banner at creation | ✅ | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| `checkNoTournament` — redirects to `/` if tournament exists | — | — | ✅ | ✅ | ✅ | ✅ | — | — |
-| **Routing & General** | | | | | | | | |
-| Home page (`/`) | ✅ | — | — | ✅ | ✅ | — | ✅ | — |
-| About page (`/about`) | ✅ | — | — | ✅ | ✅ | — | — | — |
-| 404 fallback for unknown routes | ✅ | — | — | ✅ | ✅ | — | — | — |
-| `checkTournament` → redirect to `/create` if no tournament | — | ✅ | ✅ | ✅ | ✅ | — | — | — |
-| node-schedule auto-marks matches played/finished | ✅ | ✅ | ✅ | — | — | — | — | ✅ |
+### 5.2 Non-Functional Requirements (`AQR-NFR-*`)
 
----
-
-## Test Prioritization
-
-| Priority | Feature Group | Rationale |
+| Requirement ID | Planned Suite(s) | Acceptance Intent |
 |---|---|---|
-| **P0 — Blocker** | BUG-01, BUG-02, BUG-03 (server crashes) | Must be fixed before any meaningful testing of the tournament module |
-| **P1 — Critical** | Authentication, access-control guards, team ownership security | Security foundation; all other features depend on correct auth |
-| **P1 — Critical** | Team CRUD + player management | Core user-facing workflow |
-| **P2 — High** | Tournament public views (after bugs fixed), leaderboard, match schedule | Primary value delivered to end users |
-| **P2 — High** | DB trigger correctness | Underpins all statistics; silent data corruption if triggers are wrong |
-| **P2 — High** | Tournament admin modifications, match event recording | Core admin workflows |
-| **P3 — Medium** | Profile management, file uploads | Secondary user experience |
-| **P3 — Medium** | Management dashboard, tournament creation | Supporting admin workflows |
-| **P4 — Low** | Forgot password, ticket management, social login | Not yet fully implemented |
+| AQR-NFR-001 | SU-AUTH, SU-RBAC | Password handling remains hashed and never exposed in plaintext |
+| AQR-NFR-002 | SU-RBAC | Negative authorization matrix proves boundary enforcement |
+| AQR-NFR-003 | SU-NFR | Critical page load smoke stays within agreed baseline budget |
+| AQR-NFR-004 | SU-NFR, SU-INTEGRATIONS | Core data operations stay responsive for critical workflows |
+| AQR-NFR-005 | SU-NFR | Availability assumptions validated through smoke/resilience checks |
+| AQR-NFR-006 | SU-NFR | Modern browser smoke scenarios pass on core journeys |
+| AQR-NFR-007 | SU-NFR | Responsive usability spot checks executed and documented |
+| AQR-NFR-008 | SU-INTEGRATIONS | Trigger and relational integrity checks pass for core data paths |
+| AQR-NFR-009 | SU-RBAC, SU-NFR | CSRF posture and mutation risks documented with mitigation status |
+| AQR-NFR-010 | SU-NFR | Session durability limitation is tested and explicitly reported |
+| AQR-NFR-011 | SU-PROCESS | Requirement-to-test traceability remains complete and current |
+| AQR-NFR-012 | SU-PROCESS | Risk/change governance evidence is included in cycle output |
 
----
+### 5.3 Process Requirements (`AQR-PR-*`)
 
-## Input Validation Test Scenarios
+| Requirement ID | Planned Suite(s) | Acceptance Intent |
+|---|---|---|
+| AQR-PR-001 | SU-PROCESS | Requirement changes are logged, approved, and reflected in test assets |
+| AQR-PR-002 | SU-PROCESS | Risk log exists and is updated with mitigation decisions |
+| AQR-PR-003 | SU-PROCESS | Weekly blockers/actions are captured for QA auditability |
+| AQR-PR-004 | SU-PROCESS | Test plan/report are produced as mandatory deliverables |
+| AQR-PR-005 | SU-PROCESS | Ownership for requirement interpretation and triage is explicit |
 
-Derived directly from controller source code:
+## 6) Execution Sequence
 
-| Feature | Field | Valid | Invalid (expect 400) |
-|---|---|---|---|
-| Register | `password` | any non-empty | empty |
-| Register | `retype` | equals `password` | differs from `password` |
-| Register | `email` | unique email | already registered email |
-| Login | `email` | valid email format | empty, wrong format |
-| Edit Profile | `fullname` | non-empty string | empty string |
-| Edit Profile | `birthday` | valid date string or empty | non-parseable date string |
-| Edit Profile | `phone` | exactly 10 digits or empty | 9 digits, 11 digits, non-numeric |
-| Edit Profile | `introduction` | ≤ 300 characters | > 300 characters |
-| Change Password | `newPassword` | ≥ 6 characters | < 6 characters |
-| Change Password | `newPassword` | different from current | same as current password |
-| Change Password | `password` | correct current password | wrong current password |
-| Add Goal | `matchId`, `playerId`, `teamId`, `time` | all present | any one missing |
-| Add Card | `matchId`, `playerId`, `teamId`, `time` | all present | any one missing |
-| Accept Team | team `status` | `false` (not yet accepted) | `true` (already accepted) |
-| Accept Team | team `profile` | non-null | null (no profile submitted) |
+1. **Wave 0** — Environment readiness and smoke checks (`SU-AUTH`, `SU-TOURNAMENT-VIEW`, `SU-RESILIENCE` quick pass).
+2. **Wave 1** — P1 core coverage (`SU-AUTH`, `SU-RBAC`, `SU-TEAMS-MGMT`, `SU-TOURNAMENT-ADMIN`, `SU-MATCH-ADMIN`, `SU-INTEGRATIONS`).
+3. **Wave 2** — P2 and NFR coverage (`SU-TEAMS-PUBLIC`, `SU-PROFILE`, `SU-MANAGEMENT`, `SU-NFR`).
+4. **Wave 3** — Deferred scope and governance closure (`SU-DEFERRED`, `SU-PROCESS`).
 
----
+## 7) Defect Management and Triage
 
-## Entry and Exit Criteria
+Defect record minimum fields:
 
-### Entry Criteria
-- BUG-01, BUG-02, BUG-03 are fixed and verified
-- The application starts and serves HTTP 200 on `/`, `/tournament`, and `/teams`
-- PostgreSQL is initialized with `resources/initialize.sql` and seeded with the reference fixture data (4 teams, 6 matches, seed users)
-- All P1 features have been implemented and code-reviewed
+- Defect ID, title, severity, impacted module
+- Mapped `AQR-*` ID(s)
+- Repro steps and evidence link
+- Root cause category (functional, security, data integrity, NFR, process)
+- Decision status (fix now, accepted risk, deferred)
 
-### Exit Criteria
-- All P1 and P2 test cases executed with zero open critical defects
-- API test pass rate ≥ 95%
-- All security access-control tests pass (unauthenticated and non-admin access blocked)
-- All DB trigger tests pass (correct statistics after match events)
-- No new P0/P1 defects introduced
+Severity policy:
+
+- Critical: release blocker (security breach, data corruption, P1 core flow break)
+- High: major feature failure with no acceptable workaround
+- Medium: partial behavior degradation with workaround
+- Low: minor/cosmetic issue
+
+## 8) Entry Criteria
+
+- Scope and priority baseline confirmed from `qa/advanced-requirements.md`.
+- Test environment and DB reset path are validated.
+- Required test artifacts and ownership responsibilities are assigned.
+- Blocking environment/setup defects are resolved.
+
+## 9) Exit Criteria
+
+- All P1 requirements executed with evidence and no open critical defects.
+- P2 requirements executed or explicitly accepted as residual risk.
+- NFR/PR obligations have evidence or approved exception rationale.
+- Deferred requirements are explicitly listed as out-of-scope in final report.
+- Final test summary includes requirement coverage, defect status, and go/no-go recommendation.
+
+## 10) Deliverables
+
+- Updated `qa/test-strategy.md`
+- Updated `qa/test-plan.md`
+- Cycle execution report (pass/fail by requirement and suite)
+- Defect summary with severity trend and unresolved risks
+- Scope exclusion appendix for deferred requirements
